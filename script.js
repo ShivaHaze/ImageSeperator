@@ -152,7 +152,7 @@ function drawBorders(ctx, borders) {
 function saveBordersAsImages(img, borders) {
     // Calculate x and y of borders down to the edge to get a small picture
     // And get the x and y width to limit canvas size
-    for(a = 0; a < borders.length; a++){
+    for(l = 0; l < borders.length; l++){
         // Smallest & Biggest X, Y coordinate on original
         smallestX = undefined;
         smallestY = undefined;
@@ -163,36 +163,36 @@ function saveBordersAsImages(img, borders) {
         yHeight  = undefined;
 
         for(y = 0; y < 4; y++){
-            for(x = 0; x < borders[a].length; x++){
+            for(x = 0; x < borders[l].length; x++){
                 if(y == 0){
                     if(x == 0){
-                        smallestX = borders[a][x][0];
-                        biggestX = borders[a][x][0];
+                        smallestX = borders[l][x][0];
+                        biggestX = borders[l][x][0];
                     }else{
-                        if(borders[a][x][0] < smallestX) smallestX = borders[a][x][0];
-                        if(borders[a][x][0] > biggestX) biggestX = borders[a][x][0];
+                        if(borders[l][x][0] < smallestX) smallestX = borders[l][x][0];
+                        if(borders[l][x][0] > biggestX) biggestX = borders[l][x][0];
                     } 
                 }else if(y == 1){
                     if(x == 0){
-                        smallestY = borders[a][x][1];
-                        biggestY = borders[a][x][1];
+                        smallestY = borders[l][x][1];
+                        biggestY = borders[l][x][1];
                     }else{
-                        if(borders[a][x][1] < smallestY) smallestY = borders[a][x][1];
-                        if(borders[a][x][1] > biggestY) biggestY = borders[a][x][1];
+                        if(borders[l][x][1] < smallestY) smallestY = borders[l][x][1];
+                        if(borders[l][x][1] > biggestY) biggestY = borders[l][x][1];
                     } 
                 }else if(y == 2){
-                    borders[a][x][0] -= smallestX;
+                    borders[l][x][0] -= smallestX;
                     if(x == 0){
-                        xLength = borders[a][x][0];
+                        xLength = borders[l][x][0];
                     }else{
-                        if(borders[a][x][0] > xLength) xLength = borders[a][x][0];
+                        if(borders[l][x][0] > xLength) xLength = borders[l][x][0];
                     } 
                 }else if(y == 3){
-                    borders[a][x][1] -= smallestY;
+                    borders[l][x][1] -= smallestY;
                     if(x == 0){
-                        yHeight = borders[a][x][1];
+                        yHeight = borders[l][x][1];
                     }else{
-                        if(borders[a][x][1] > yHeight) yHeight = borders[a][x][1];
+                        if(borders[l][x][1] > yHeight) yHeight = borders[l][x][1];
                     } 
                 }
             }
@@ -206,10 +206,10 @@ function saveBordersAsImages(img, borders) {
 
         // Define Clipping Path of currently first border
         ctx.beginPath();
-        ctx.moveTo(borders[a][0][0], borders[a][0][1]);
-        for(var i = 1; i < borders[a].length; i++){
-            var p = borders[a][i];
-            ctx.lineTo(borders[a][i][0], borders[a][i][1]);
+        ctx.moveTo(borders[l][0][0], borders[l][0][1]);
+        for(var i = 1; i < borders[l].length; i++){
+            var p = borders[l][i];
+            ctx.lineTo(borders[l][i][0], borders[l][i][1]);
         }
         ctx.closePath();
         ctx.clip();
@@ -218,16 +218,39 @@ function saveBordersAsImages(img, borders) {
         ctx.drawImage(img, smallestX, smallestY, xDistance, yDistance, 0, 0, xDistance, yDistance)
         var pixeldata = ctx.getImageData(0, 0, img.width, img.height);
         pixeldata = filterNoise(pixeldata);
+        pixeldata = transparentToWhite(pixeldata);
         ctx.putImageData(pixeldata, 0, 0);
-
 
         // save image as file
         var file = canvas.toDataURL("image/png");
 
         var data = file.replace(/^data:image\/\w+;base64,/, "");
         var buf = new Buffer(data, 'base64');
-        fs.writeFile('cropped/image'+ a + '.png', buf);
+        fs.writeFile('cropped/image'+ l + '.png', buf);
     }
+}
+
+function transparentToWhite(pixeldata) {
+    for (x = 0; x < pixeldata.width; x++) {
+
+        for (y = 0; y < pixeldata.height; y++) {
+
+            offset = (pixeldata.width * y + x) * 4;
+            r = pixeldata.data[offset];   // rot
+            g = pixeldata.data[offset + 1]; // grün
+            b = pixeldata.data[offset + 2]; // blau
+            a = pixeldata.data[offset + 3]; // Transparenz
+
+            if(a == 0) {
+                pixeldata.data[offset] = 255;
+                pixeldata.data[offset + 1] = 255;
+                pixeldata.data[offset + 2] = 255;
+                pixeldata.data[offset + 3] = 255;
+            }
+        }
+    }
+
+    return pixeldata;
 }
 
 http.createServer(function (req, res) {
@@ -242,7 +265,7 @@ http.createServer(function (req, res) {
         ctx.drawImage(img, 0, 0, img.width, img.height);
 
         var pixeldata = ctx.getImageData(0, 0, img.width, img.height);
-        
+
         pixeldata = filterNoise(pixeldata);
 
         ctx.putImageData(pixeldata, 0, 0);
