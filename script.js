@@ -1,6 +1,6 @@
-var http = require('http')
-var fs = require('fs') 
-var Canvas = require('canvas');
+var http    = require('http')
+var fs      = require('fs') 
+var Canvas  = require('canvas');
 
 function pixelIsTouching (coord1, coord2){
 
@@ -201,9 +201,6 @@ function saveBordersAsImages(img, borders) {
         xDistance = biggestX - smallestX;
         yDistance = biggestY - smallestY;
 
-        // Working correct
-        //console.log(smallestX + ' ' + biggestX + ' ' + smallestY + ' ' + biggestY + ' ' + xLength + ' ' + yHeight);
-
         var canvas = Canvas.createCanvas(xDistance, yDistance);
         var ctx = canvas.getContext('2d');
 
@@ -218,9 +215,6 @@ function saveBordersAsImages(img, borders) {
         ctx.clip();
 
         // Draw original Image over canvas with clipping area defined
-        //void ctx.drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
-
-        // ctx.drawImage(img, 0, 0, img.width, img.height);
         ctx.drawImage(img, smallestX, smallestY, xDistance, yDistance, 0, 0, xDistance, yDistance)
         var pixeldata = ctx.getImageData(0, 0, img.width, img.height);
         pixeldata = filterNoise(pixeldata);
@@ -246,9 +240,7 @@ http.createServer(function (req, res) {
         var canvas = Canvas.createCanvas(img.width, img.height);
         var ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, img.width, img.height);
-        
-        //ctx.save();
-        
+
         var pixeldata = ctx.getImageData(0, 0, img.width, img.height);
         
         pixeldata = filterNoise(pixeldata);
@@ -259,9 +251,6 @@ http.createServer(function (req, res) {
 
         drawBorders(ctx, borders);
 
-        //ctx.restore();
-        
-        // Clear Canvas
         //ctx.clearRect(0, 0, img.width, img.height);
        
         saveBordersAsImages(img, borders);
