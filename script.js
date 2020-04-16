@@ -23,6 +23,8 @@ var Canvas  = require('canvas');
 //     //console.log(unlv);
 //   })();
 
+var noiseThreshold = 200;
+
 function pixelIsTouching (coord1, coord2){
 
     if(coord1[0] == coord2[0] && 
@@ -39,12 +41,15 @@ function pixelIsTouching (coord1, coord2){
 }
 
 function filterNoise(pixeldata) {
+    
+    console.log("Filtering Noise..");
+
     for(var x = 0; x < pixeldata.data.length; x+=4){
-        if( pixeldata.data[x] < 127) {
+        if( pixeldata.data[x] < noiseThreshold) {
             pixeldata.data[x] = 0;
             pixeldata.data[x+1] = 0;
             pixeldata.data[x+2] = 0;
-        }else if(pixeldata.data[x] >= 127) {
+        }else if(pixeldata.data[x] >= noiseThreshold) {
             pixeldata.data[x] = 255;
             pixeldata.data[x+1] = 255;
             pixeldata.data[x+2] = 255;
@@ -57,6 +62,8 @@ function filterNoise(pixeldata) {
 function getBorders(pixeldata) {
     // Bilddaten pixelweise abarbeiten
     var border = [];
+
+    console.log("Getting Borders..");
 
     for (x = 0; x < pixeldata.width; x++) {
 
@@ -107,6 +114,8 @@ function getBorders(pixeldata) {
         }
     }
 
+    console.log("Ordering Borders..");
+
     //Order border array
     var borderscounter = 0;
     var borders = [[]];
@@ -142,11 +151,16 @@ function getBorders(pixeldata) {
         }
     }
 
+    console.log("Borders ordered.")
+
     return borders;
 }
 
 function drawBorders(ctx, borders) {
     // Draw Line via Border Array
+
+    console.log("Drawing Borders..");
+
     ctx.lineWidth = 1;
     ctx.strokeStyle = 'red';
     ctx.beginPath();
@@ -171,6 +185,9 @@ function drawBorders(ctx, borders) {
 }
 
 function saveBordersAsImages(img, borders) {
+
+    console.log("Saving images via borders..");
+
     // Calculate x and y of borders down to the edge to get a small picture
     // And get the x and y width to limit canvas size
     for(l = 0; l < borders.length; l++){
@@ -275,15 +292,11 @@ function transparentToWhite(pixeldata) {
 }
 
 http.createServer(function (req, res) {
-    fs.readFile(__dirname + '/images/multistar_correct.jpg', function(err, data) {
+    fs.readFile(__dirname + '/images/micro.png', function(err, data) {
         if (err) throw err;
 
         var img = new Canvas.Image; // Create a new Image
         img.src = data;
-
-        // Tesseract.recognize(data).then(result => {
-        //     console.log(result);
-        // });
 
         var canvas = Canvas.createCanvas(img.width, img.height);
         var ctx = canvas.getContext('2d');
@@ -295,13 +308,13 @@ http.createServer(function (req, res) {
 
         ctx.putImageData(pixeldata, 0, 0);
         
-        var borders = getBorders(pixeldata);
+        //var borders = getBorders(pixeldata);
 
-        drawBorders(ctx, borders);
+        //drawBorders(ctx, borders);
 
         //ctx.clearRect(0, 0, img.width, img.height);
        
-        saveBordersAsImages(img, borders);
+        //saveBordersAsImages(img, borders);
 
         res.write('<html><body>');
         res.write('<img src="' + canvas.toDataURL() + '" />');
