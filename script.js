@@ -1,6 +1,27 @@
 var http    = require('http')
 var fs      = require('fs') 
 var Canvas  = require('canvas');
+// const { createWorker } = require('tesseract.js');
+
+// const worker = createWorker();
+
+// (async () => {
+//     await worker.load();
+//     await worker.loadLanguage('eng');
+//     await worker.initialize('eng');
+//     await worker.setParameters({
+//       tessedit_create_box: '1',
+//       tessedit_create_unlv: '1',
+//       tessedit_create_osd: '1',
+//       tessedit_char_whitelist: '0123456789'
+//     });
+//     const { data: { text, hocr, tsv, box, unlv } } = await worker.recognize('https://i.stack.imgur.com/KVmJd.png');
+//     //console.log(text);
+//     console.log(hocr);
+//     //console.log(tsv);
+//     //console.log(box);
+//     //console.log(unlv);
+//   })();
 
 function pixelIsTouching (coord1, coord2){
 
@@ -259,6 +280,10 @@ http.createServer(function (req, res) {
 
         var img = new Canvas.Image; // Create a new Image
         img.src = data;
+
+        // Tesseract.recognize(data).then(result => {
+        //     console.log(result);
+        // });
 
         var canvas = Canvas.createCanvas(img.width, img.height);
         var ctx = canvas.getContext('2d');
