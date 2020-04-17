@@ -365,7 +365,7 @@ function sortNumber(a, b) {
 
 http.createServer(function (req, res) {
     if (req.url != '/favicon.ico') {   
-        fs.readFile(__dirname + '/images/micro.png', function(err, data) {
+        fs.readFile(__dirname + '/images/micro_border.png', function(err, data) {
             if (err) throw err;
 
             var img = new Canvas.Image; // Create a new Image
