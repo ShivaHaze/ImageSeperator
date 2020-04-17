@@ -24,6 +24,7 @@ var Canvas  = require('canvas');
 //   })();
 
 var noiseThreshold = 200;
+var extraWhitespace = 10;
 
 function pixelIsTouching (coord1, coord2){
 
@@ -42,7 +43,7 @@ function pixelIsTouching (coord1, coord2){
 
 function filterNoise(pixeldata) {
     
-    console.log("Filtering Noise..");
+    //console.log("Filtering Noise..");
 
     for(var x = 0; x < pixeldata.data.length; x+=4){
         if( pixeldata.data[x] < noiseThreshold) {
@@ -151,8 +152,6 @@ function getBorders(pixeldata) {
         }
     }
 
-    console.log("Borders ordered.")
-
     return borders;
 }
 
@@ -255,6 +254,7 @@ function saveBordersAsImages(img, borders) {
         // Draw original Image over canvas with clipping area defined
         ctx.drawImage(img, smallestX, smallestY, xDistance, yDistance, 0, 0, xDistance, yDistance)
         var pixeldata = ctx.getImageData(0, 0, img.width, img.height);
+        // filterNoise needed here..?
         pixeldata = filterNoise(pixeldata);
         pixeldata = transparentToWhite(pixeldata);
         ctx.putImageData(pixeldata, 0, 0);
@@ -264,8 +264,10 @@ function saveBordersAsImages(img, borders) {
 
         var data = file.replace(/^data:image\/\w+;base64,/, "");
         var buf = new Buffer(data, 'base64');
-        fs.writeFile('cropped/image'+ l + '.png', buf);
+        fs.writeFile('cropped/image'+ l + '.png', buf, (error) => { /* handle error */ });
     }
+
+    console.log("Done.\n");
 }
 
 function transparentToWhite(pixeldata) {
@@ -292,38 +294,41 @@ function transparentToWhite(pixeldata) {
 }
 
 http.createServer(function (req, res) {
-    fs.readFile(__dirname + '/images/micro.png', function(err, data) {
-        if (err) throw err;
+    if (req.url != '/favicon.ico') {   
+        fs.readFile(__dirname + '/images/multistar_correct.jpg', function(err, data) {
+            if (err) throw err;
 
-        var img = new Canvas.Image; // Create a new Image
-        img.src = data;
+            var img = new Canvas.Image; // Create a new Image
+            img.src = data;
 
-        var canvas = Canvas.createCanvas(img.width, img.height);
-        var ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, img.width, img.height);
+            var canvas = Canvas.createCanvas(img.width + extraWhitespace, img.height + extraWhitespace);
+            var ctx = canvas.getContext('2d');
+            ctx.fillStyle = "white";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, extraWhitespace/2, extraWhitespace/2, img.width, img.height);
 
-        var pixeldata = ctx.getImageData(0, 0, img.width, img.height);
+            var pixeldata = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-        pixeldata = filterNoise(pixeldata);
+            pixeldata = filterNoise(pixeldata);
 
-        ctx.putImageData(pixeldata, 0, 0);
+            ctx.putImageData(pixeldata, 0, 0);
+            
+            var borders = getBorders(pixeldata);
+
+            drawBorders(ctx, borders);
+
+            //ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-        //var borders = getBorders(pixeldata);
+            saveBordersAsImages(canvas, borders);
 
-        //drawBorders(ctx, borders);
-
-        //ctx.clearRect(0, 0, img.width, img.height);
-       
-        //saveBordersAsImages(img, borders);
-
-        res.write('<html><body>');
-        res.write('<img src="' + canvas.toDataURL() + '" />');
-        res.write('</body></html>');
-        res.end();
-    });
-
+            res.write('<html><body>');
+            res.write('<img src="' + canvas.toDataURL() + '" />');
+            res.write('</body></html>');
+            res.end();
+        });
+    }
 }).listen(8124, "127.0.0.1");
-console.log('Server running at http://127.0.0.1:8124/');
+console.log('Server running at http://127.0.0.1:8124/\n');
 
 
  
