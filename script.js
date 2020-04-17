@@ -64,7 +64,7 @@ function getBorders(pixeldata) {
     // Bilddaten pixelweise abarbeiten
     var border = [];
 
-    console.log("Getting Borders..");
+    console.log("Getting borders..");
 
     for (x = 0; x < pixeldata.width; x++) {
 
@@ -115,7 +115,7 @@ function getBorders(pixeldata) {
         }
     }
 
-    console.log("Ordering Borders..");
+    console.log("Ordering borders..");
 
     //Order border array
     var borderscounter = 0;
@@ -158,7 +158,7 @@ function getBorders(pixeldata) {
 function drawBorders(ctx, borders) {
     // Draw Line via Border Array
 
-    console.log("Drawing Borders..");
+    console.log("Drawing borders..");
 
     ctx.lineWidth = 1;
     ctx.strokeStyle = 'red';
@@ -293,9 +293,79 @@ function transparentToWhite(pixeldata) {
     return pixeldata;
 }
 
+function filterBorders(borders) {
+
+    console.log("Filtering borders..")
+
+    var smallX = null;
+    var smallY = null;
+    var bigX   = null;
+    var bigY   = null;
+
+    var coordValues = [];
+    var indexToDelete = [];
+
+    for(var a = 0; a < borders.length; a++){       
+        for(var b = 0; b < borders[a].length; b++){
+            if(b == 0){
+                smallX = borders[a][b][0];
+                bigX   = borders[a][b][0];
+                smallY = borders[a][b][1];
+                bigY   = borders[a][b][1];
+            }else{
+                if(borders[a][b][0] < smallX) smallX = borders[a][b][0];
+                if(borders[a][b][0] > bigX) bigX = borders[a][b][0];
+                if(borders[a][b][1] < smallY) smallY = borders[a][b][1];
+                if(borders[a][b][1] > bigY) bigY = borders[a][b][1]; 
+            }
+        }    
+        coordValues.push([smallX, smallY, bigX, bigY]);
+    }
+
+    console.log(coordValues);
+
+    for(var a = 0; a < coordValues.length; a++){
+        for(var b = a+1; b < coordValues.length; b++){
+
+            if(coordValues[a][0] > coordValues[b][0] &&
+                coordValues[a][1] > coordValues[b][1] &&
+                coordValues[a][2] < coordValues[b][2] &&
+                coordValues[a][3] < coordValues[b][3]) {
+                    // console.log(a + ' in ' + b);
+                    if(!indexToDelete.includes(a)) indexToDelete.push(a);
+
+            }else if(coordValues[a][0] < coordValues[b][0] &&
+                coordValues[a][1] < coordValues[b][1] &&
+                coordValues[a][2] > coordValues[b][2] &&
+                coordValues[a][3] > coordValues[b][3]) {
+                    // console.log(b + ' in ' + a);
+                    if(!indexToDelete.includes(b)) indexToDelete.push(b);
+            }
+        }
+    }
+
+    indexToDelete.sort(sortNumber);
+
+    console.log(indexToDelete);
+    
+    // Huge Error, not correctly finding borders IN borders, check micro.png numbers on corners.
+    var counter = 0;
+
+    for(var x = 0; x < indexToDelete.length; x++){
+        borders.splice(indexToDelete[x]-counter, 1);
+        counter++;
+    }
+
+    return borders;
+}
+
+function sortNumber(a, b) {
+    return a - b;
+}
+
 http.createServer(function (req, res) {
     if (req.url != '/favicon.ico') {   
-        fs.readFile(__dirname + '/images/multistar_correct.jpg', function(err, data) {
+        fs.readFile(__dirname + '/images/micro.png', function(err, data) {
             if (err) throw err;
 
             var img = new Canvas.Image; // Create a new Image
@@ -315,11 +385,13 @@ http.createServer(function (req, res) {
             
             var borders = getBorders(pixeldata);
 
+            var borders = filterBorders(borders);
+
             drawBorders(ctx, borders);
 
             //ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-            saveBordersAsImages(canvas, borders);
+            //saveBordersAsImages(canvas, borders);
 
             res.write('<html><body>');
             res.write('<img src="' + canvas.toDataURL() + '" />');
