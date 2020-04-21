@@ -293,7 +293,7 @@ function transparentToWhite(pixeldata) {
     return pixeldata;
 }
 
-function filterBorders(borders) {
+function filterBorders(borders, pixeldata) {
 
     console.log("Filtering borders..")
 
@@ -322,7 +322,9 @@ function filterBorders(borders) {
         coordValues.push([smallX, smallY, bigX, bigY]);
     }
 
-    console.log(coordValues);
+    //verifyObjectInObject(borders, coordValues);
+
+    //console.log(coordValues);
 
     for(var a = 0; a < coordValues.length; a++){
         for(var b = a+1; b < coordValues.length; b++){
@@ -332,21 +334,24 @@ function filterBorders(borders) {
                 coordValues[a][2] < coordValues[b][2] &&
                 coordValues[a][3] < coordValues[b][3]) {
                     // console.log(a + ' in ' + b);
-                    if(!indexToDelete.includes(a)) indexToDelete.push(a);
-
+                    if(verifyObjectInObject(coordValues[b], coordValues[a], b, a, borders, pixeldata)){
+                        if(!indexToDelete.includes(a)) indexToDelete.push(a);
+                    }
             }else if(coordValues[a][0] < coordValues[b][0] &&
                 coordValues[a][1] < coordValues[b][1] &&
                 coordValues[a][2] > coordValues[b][2] &&
                 coordValues[a][3] > coordValues[b][3]) {
                     // console.log(b + ' in ' + a);
-                    if(!indexToDelete.includes(b)) indexToDelete.push(b);
+                    if(verifyObjectInObject(coordValues[a], coordValues[b], a, b, borders, pixeldata)){
+                        if(!indexToDelete.includes(b)) indexToDelete.push(b);
+                    }
             }
         }
     }
 
     indexToDelete.sort(sortNumber);
 
-    console.log(indexToDelete);
+    //console.log(indexToDelete);
     
     // Huge Error, not correctly finding borders IN borders, check micro.png numbers on corners.
     var counter = 0;
@@ -363,9 +368,90 @@ function sortNumber(a, b) {
     return a - b;
 }
 
+function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders, pixeldata) {
+
+    console.log("Verifying that object is in another object..");
+
+    var goalReached = false;
+    var startPointReached = false;
+
+    var outerBorder = borders[outerIndex];
+    var innerBorder = borders[innerIndex];
+
+    var startPoint = innerBorder[0];
+    var hitPoint = null;
+
+    var colorOfObject = null;
+
+    // var counter = 0;
+    var tempCoords = [];
+
+    // Get Color of inner Object to define exclude rule
+    for(a = 0; a < innerBorder.length; a++){
+        if(innerBorder[a][0] == innerBB[0]){
+            // Min X point, go one right, check color
+            // counter++;
+            tempCoords.push(innerBorder[a]);
+        }
+    }
+
+    // counter = counter/2;
+
+    // if(counter%1 != 0) counter -= 0.5;
+
+    offset = (pixeldata.width * tempCoords[1][1] + (tempCoords[1][0]+1)) * 4;
+    r = pixeldata.data[offset];
+
+    // Edgy but works at the moment.
+    // done. Not sure if works perfectly "(CHANGE THIS NOT TO TAKE COLOR OF MEDIAN BUT THE SECOND AS IT SHOULD ALWAYS HIT!)"
+
+    if(r == 255){
+        console.log("white");
+        colorOfObject = 'white';
+    }else{
+        console.log("black");
+        colorOfObject = 'black';
+    }
+
+    // Reach out to border
+    while(goalReached != true || startPointReached != true){
+        while(hitPoint == null && goalReached == false){
+            startPoint[0]++;
+
+            if(JSON.stringify(outerBorder).indexOf(JSON.stringify(startPoint)) != -1){
+                hitPoint = startPoint;
+            }
+
+            if(startPoint[0] > outerBB[2]) goalReached = true;
+        }
+        // Follow border until at min or max X or Y - Then extra step away to see if out
+
+        if(hitpoint != null){
+            minX = outerBB[0];
+            minxY = outerbb[1];
+            maxX = outerBB[2];
+            maxY = outerBB[3];
+
+
+            // Check colors next to max coords for white, if so - free
+            // offset = (pixeldata.width * y + x) * 4;
+            // r = pixeldata.data[offset];   // rot
+            // g = pixeldata.data[offset + 1]; // grün
+            // b = pixeldata.data[offset + 2]; // blau
+            // a = pixeldata.data[offset + 3]; // Transparenz
+        }
+    }    
+
+    
+
+
+
+    return goalReached
+}
+
 http.createServer(function (req, res) {
     if (req.url != '/favicon.ico') {   
-        fs.readFile(__dirname + '/images/micro_border.png', function(err, data) {
+        fs.readFile(__dirname + '/images/multistar_correct3.jpg', function(err, data) {
             if (err) throw err;
 
             var img = new Canvas.Image; // Create a new Image
@@ -385,7 +471,7 @@ http.createServer(function (req, res) {
             
             var borders = getBorders(pixeldata);
 
-            var borders = filterBorders(borders);
+            var borders = filterBorders(borders, pixeldata);
 
             drawBorders(ctx, borders);
 
