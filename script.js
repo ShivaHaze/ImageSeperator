@@ -1,6 +1,8 @@
 var http    = require('http')
 var fs      = require('fs') 
 var Canvas  = require('canvas');
+var	query   = require('cli-interact').getYesNo;
+
 // const { createWorker } = require('tesseract.js');
 
 // const worker = createWorker();
@@ -426,9 +428,9 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
         }
         // Follow border until at min or max X or Y - Then extra step away to see if out
 
-        if(hitpoint != null){
+        if(hitPoint != null){
             minX = outerBB[0];
-            minxY = outerbb[1];
+            minxY = outerBB[1];
             maxX = outerBB[2];
             maxY = outerBB[3];
 
@@ -456,7 +458,7 @@ http.createServer(function (req, res) {
 
             var img = new Canvas.Image; // Create a new Image
             img.src = data;
-
+            // query('Press any key to continue..', true);
             var canvas = Canvas.createCanvas(img.width + extraWhitespace, img.height + extraWhitespace);
             var ctx = canvas.getContext('2d');
             ctx.fillStyle = "white";
