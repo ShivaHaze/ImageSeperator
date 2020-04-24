@@ -336,7 +336,7 @@ function filterBorders(borders, pixeldata) {
                 coordValues[a][2] < coordValues[b][2] &&
                 coordValues[a][3] < coordValues[b][3]) {
                     // console.log(a + ' in ' + b);
-                    if(verifyObjectInObject(coordValues[b], coordValues[a], b, a, borders, pixeldata)){
+                    if(!verifyObjectInObject(coordValues[b], coordValues[a], b, a, borders, pixeldata)){
                         if(!indexToDelete.includes(a)) indexToDelete.push(a);
                     }
             }else if(coordValues[a][0] < coordValues[b][0] &&
@@ -344,7 +344,7 @@ function filterBorders(borders, pixeldata) {
                 coordValues[a][2] > coordValues[b][2] &&
                 coordValues[a][3] > coordValues[b][3]) {
                     // console.log(b + ' in ' + a);
-                    if(verifyObjectInObject(coordValues[a], coordValues[b], a, b, borders, pixeldata)){
+                    if(!verifyObjectInObject(coordValues[a], coordValues[b], a, b, borders, pixeldata)){
                         if(!indexToDelete.includes(b)) indexToDelete.push(b);
                     }
             }
@@ -377,29 +377,34 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
     var goalReached = false;
     var startPointReached = false;
 
-    var outerBorder = borders[outerIndex];
+    // var outerBorder = borders[outerIndex];
     var innerBorder = borders[innerIndex];
 
     var startPoint = innerBorder[0];
-    var hitPoint = null;
+    var firstHit = false;
+    var movePoint  = [...innerBorder[0]];
+    // var hitPoint = null;
+
+    // var moveSet = {
+    //     0: left,
+    //     1: down,
+    //     2: right,
+    //     3: up
+    // }
+
+    var moveSetCounter = 0;
 
     var colorOfObject = null;
 
-    // var counter = 0;
     var tempCoords = [];
 
     // Get Color of inner Object to define exclude rule
     for(a = 0; a < innerBorder.length; a++){
         if(innerBorder[a][0] == innerBB[0]){
             // Min X point, go one right, check color
-            // counter++;
             tempCoords.push(innerBorder[a]);
         }
     }
-
-    // counter = counter/2;
-
-    // if(counter%1 != 0) counter -= 0.5;
 
     offset = (pixeldata.width * tempCoords[1][1] + (tempCoords[1][0]+1)) * 4;
     r = pixeldata.data[offset];
@@ -415,39 +420,89 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
         colorOfObject = 'black';
     }
 
-    // Reach out to border
-    while(goalReached != true || startPointReached != true){
-        while(hitPoint == null && goalReached == false){
-            startPoint[0]++;
+   // if colorOfObject is white, skip process - it's an inner border       
+    if(colorOfObject == 'black'){
+        while(goalReached != true && startPointReached != true){
+            
+            // console.log('MoveCounter: ', moveSetCounter);
+            
+            if(moveSetCounter % 4 == 0){
+                offset = (pixeldata.width * movePoint[1] + (movePoint[0]-1)) * 4;
+                r = pixeldata.data[offset];
+                // console.log(r);
+                if(r == 255){
+                    movePoint[0]--;
+                    if(moveSetCounter != 0) moveSetCounter--;
+                }else{
+                    moveSetCounter++;
+                }
+            }else if(moveSetCounter % 4 == 1){
+                if(firstHit != true){
+                    firstHit = true;
+                    startPoint = [...movePoint];
+                    // console.log("new Startpoint: ", startPoint);
+                }
+                offset = (pixeldata.width * (movePoint[1]+1) + movePoint[0]) * 4;
+                r = pixeldata.data[offset];
 
-            if(JSON.stringify(outerBorder).indexOf(JSON.stringify(startPoint)) != -1){
-                hitPoint = startPoint;
+                if(r == 255){
+                    movePoint[1]++;
+                    moveSetCounter--;
+                }else{
+                    moveSetCounter++;
+                }
+            }else if(moveSetCounter % 4 == 2){
+                offset = (pixeldata.width * movePoint[1] + (movePoint[0]+1)) * 4;
+                r = pixeldata.data[offset];
+
+                if(r == 255){
+                    movePoint[0]++;
+                    moveSetCounter--;
+                }else{
+                    moveSetCounter++;
+                }
+            }else if(moveSetCounter % 4 == 3){
+                offset = (pixeldata.width * (movePoint[1]-1) + movePoint[0]) * 4;
+                r = pixeldata.data[offset];
+
+                if(r == 255){
+                    movePoint[1]--;
+                    moveSetCounter--;
+                }else{
+                    moveSetCounter++;
+                }
             }
 
-            if(startPoint[0] > outerBB[2]) goalReached = true;
-        }
-        // Follow border until at min or max X or Y - Then extra step away to see if out
 
-        if(hitPoint != null){
-            minX = outerBB[0];
-            minxY = outerBB[1];
-            maxX = outerBB[2];
-            maxY = outerBB[3];
+            // console.log('StartPoint: ', startPoint);
+            // console.log('MovePoint: ' , movePoint);
+            // console.log(outerBB);
 
+                        
+            if(movePoint[0] < outerBB[0] ||
+                movePoint[0] > outerBB[2] ||
+                movePoint[1] < outerBB[1] ||
+                movePoint[1] > outerBB[3] ) {
+                    goalReached = true;
+                    console.log("Goal Reached!");
+                }
 
-            // Check colors next to max coords for white, if so - free
-            // offset = (pixeldata.width * y + x) * 4;
-            // r = pixeldata.data[offset];   // rot
-            // g = pixeldata.data[offset + 1]; // grün
-            // b = pixeldata.data[offset + 2]; // blau
-            // a = pixeldata.data[offset + 3]; // Transparenz
-        }
-    }    
+            if(movePoint[0] == startPoint[0] &&
+                movePoint[1] == startPoint[1]) {
+                    startPointReached = true;
+                    // console.log("AYE ", movePoint[0], startPoint[0], movePoint[1], startPoint[1])
+                    console.log("StartPoint Reached!");
+                }
 
-    
+            // if(JSON.stringify(outerBorder).indexOf(JSON.stringify(movePoint)) != -1){
+            //     hitPoint = movePoint;
+            // }
 
-
-
+            // if(movePoint[0] < outerBB[0]) goalReached = true;
+        
+        }    
+    }
+    // console.log('GoalReached ', goalReached);
     return goalReached
 }
 
