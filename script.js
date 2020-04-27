@@ -102,6 +102,19 @@ function getBorders(pixeldata) {
             topLeftOffset       = (pixeldata.width * (y-1) + (x-1)) * 4;
             rTopLeft            = pixeldata.data[topLeftOffset];
 
+            // if((x == 16 || x == 17) && (y == 155 || y == 154 || y == 153)){
+            //     query(x + ' ' + y, true);
+            //     console.log('r', r);
+            //     console.log('rTop', rTop);
+            //     console.log('rTopRight', rTopRight);
+            //     console.log('rRight', rRight);
+            //     console.log('rBottomRight', rBottomRight);
+            //     console.log('rBottom', rBottom);
+            //     console.log('rBottomLeft', rBottomLeft);
+            //     console.log('rLeft', rLeft);
+            //     console.log('rTopLeft', rTopLeft);
+            // }
+
             // Check around current white pixel if black one is near
             if( r == 255 && rTop == 0 ||
                 r == 255 && rTopRight == 0 ||
@@ -380,6 +393,16 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
     // var outerBorder = borders[outerIndex];
     var innerBorder = borders[innerIndex];
 
+
+    // console.log('borders', borders);
+
+    // console.log('outerBB' , outerBB);
+    // console.log('innerBB' , innerBB);
+    // console.log('outerIndex', outerIndex);
+    // console.log('innerIndex', innerIndex);
+
+    // console.log('innerBorder', innerBorder);
+
     var startPoint = innerBorder[0];
     var firstHit = false;
     var movePoint  = [...innerBorder[0]];
@@ -406,6 +429,7 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
         }
     }
 
+    // TypeError: Cannot read property '1' of undefined || Some weird borders are found - why??
     offset = (pixeldata.width * tempCoords[1][1] + (tempCoords[1][0]+1)) * 4;
     r = pixeldata.data[offset];
 
@@ -508,7 +532,7 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
 
 http.createServer(function (req, res) {
     if (req.url != '/favicon.ico') {   
-        fs.readFile(__dirname + '/images/multistar_correct3.jpg', function(err, data) {
+        fs.readFile(__dirname + '/images/multistar_correct_edge.jpg', function(err, data) {
             if (err) throw err;
 
             var img = new Canvas.Image; // Create a new Image
@@ -534,7 +558,7 @@ http.createServer(function (req, res) {
 
             //ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-            //saveBordersAsImages(canvas, borders);
+            saveBordersAsImages(canvas, borders);
 
             res.write('<html><body>');
             res.write('<img src="' + canvas.toDataURL() + '" />');
