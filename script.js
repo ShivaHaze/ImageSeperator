@@ -532,7 +532,7 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
 
 http.createServer(function (req, res) {
     if (req.url != '/favicon.ico') {   
-        fs.readFile(__dirname + '/images/multistar_correct_edge.jpg', function(err, data) {
+        fs.readFile(__dirname + '/images/multistar_correct_edge2.jpg', function(err, data) {
             if (err) throw err;
 
             var img = new Canvas.Image; // Create a new Image
@@ -551,6 +551,8 @@ http.createServer(function (req, res) {
             ctx.putImageData(pixeldata, 0, 0);
             
             var borders = getBorders(pixeldata);
+
+            console.log(borders);
 
             var borders = filterBorders(borders, pixeldata);
 
