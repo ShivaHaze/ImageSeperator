@@ -62,6 +62,153 @@ function filterNoise(pixeldata) {
     return pixeldata;
 }
 
+function move(direction, currentCoords){
+    var currentX = currentCoords[0];
+    var currentY = currentCoords[1];
+
+    if(direction == 'right') currentX++;
+    if(direction == 'down') currentY++;
+    if(direction == 'left') currentX--;
+    if(direction == 'up') currentY--;
+
+    return [currentX, currentY];
+}
+
+function moveable(direction, currentCoords, pixeldata){
+    var accessible = false;
+    var currentX = currentCoords[0];
+    var currentY = currentCoords[1];
+
+    if(direction == 'right') currentX++;
+    if(direction == 'down') currentY++;
+    if(direction == 'left') currentX--;
+    if(direction == 'up') currentY--;
+
+    offset = (pixeldata.width * currentY + currentX) * 4;
+    r = pixeldata.data[offset];   // rot
+
+    if(r == 255) accessible = true;
+
+    return accessible;
+}
+
+function getBorders2(pixeldata) {
+
+    console.log("Getting borders..");
+    
+    var border = [];
+    var borders = [];
+    
+    var currentCoords = [];
+    var startCoords = [];
+    var facing = 'right';
+
+    for (x = 0; x < pixeldata.width; x++) {
+
+        for (y = 0; y < pixeldata.height; y++) {
+
+            offset = (pixeldata.width * y + x) * 4;
+            r = pixeldata.data[offset];   // rot
+            g = pixeldata.data[offset + 1]; // grün
+            b = pixeldata.data[offset + 2]; // blau
+            a = pixeldata.data[offset + 3]; // Transparenz
+
+            topOffset           = (pixeldata.width * (y-1) + x) * 4;
+            rTop                = pixeldata.data[topOffset];
+
+            topRightOffset      = (pixeldata.width * (y-1) + (x+1)) * 4;
+            rTopRight           = pixeldata.data[topRightOffset];
+
+            rightOffset         = (pixeldata.width * y + (x+1)) * 4;
+            rRight              = pixeldata.data[rightOffset];
+
+            bottomRightOffset   = (pixeldata.width * (y+1) + (x+1)) * 4;
+            rBottomRight        = pixeldata.data[bottomRightOffset];
+
+            bottomOffset        = (pixeldata.width * (y+1) + x) * 4;
+            rBottom             = pixeldata.data[bottomOffset];
+
+            bottomLeftOffset    = (pixeldata.width * (y+1) + (x-1)) * 4;
+            rBottomLeft         = pixeldata.data[bottomLeftOffset];
+
+            leftOffset          = (pixeldata.width * y + (x-1)) * 4;
+            rLeft               = pixeldata.data[leftOffset];
+            
+            topLeftOffset       = (pixeldata.width * (y-1) + (x-1)) * 4;
+            rTopLeft            = pixeldata.data[topLeftOffset];
+
+            if(border.length == 0){
+                if(JSON.stringify(borders).indexOf(JSON.stringify([x, y])) == -1){
+                    if( r == 255 && rTop == 0 ||
+                        r == 255 && rTopRight == 0 ||
+                        r == 255 && rRight == 0 ||
+                        r == 255 && rBottomRight == 0 ||
+                        r == 255 && rBottom == 0 || 
+                        r == 255 && rBottomLeft == 0 ||
+                        r == 255 && rLeft == 0 ||
+                        r == 255 && rTopLeft == 0){
+
+                            currentCoords = [x, y];
+                            startCoords = [x, y];
+                            border.push([x, y]);
+                    }
+                }
+            }
+
+            while(border.length > 0){
+                if(border.length == 1){
+                    currentCoords = move('right', currentCoords);
+                    border.push(currentCoords);
+                    facing = 'down';
+                }else{
+                    if(facing == 'up'){
+                        if(moveable('up', currentCoords, pixeldata)){
+                            currentCoords = move('up', currentCoords);
+                            border.push(currentCoords);
+                            facing = 'right';
+                        }else{
+                            facing = 'left';
+                        }
+                    }else if(facing == 'right'){
+                        if(moveable('right', currentCoords, pixeldata)){
+                            currentCoords = move('right', currentCoords);
+                            border.push(currentCoords);
+                            facing = 'down';
+                        }else{
+                            facing = 'up';
+                        }
+                    }else if(facing == 'down'){
+                        if(moveable('down', currentCoords, pixeldata)){
+                            currentCoords = move('down', currentCoords);
+                            border.push(currentCoords);
+                            facing = 'left';
+                        }else{
+                            facing = 'right';
+                        }
+                    }else if(facing == 'left'){
+                        if(moveable('left', currentCoords, pixeldata)){
+                            currentCoords = move('left', currentCoords);
+                            border.push(currentCoords);
+                            facing = 'up';
+                        }else{
+                            facing = 'down';
+                        }
+                    }
+                }
+
+                if(JSON.stringify(currentCoords) == JSON.stringify(startCoords)){
+                    console.log('finished');
+                    borders.push(border);
+                    border = [];
+                }
+            }
+        }
+    }
+
+
+    return borders;
+}
+
 function getBorders(pixeldata) {
     // Bilddaten pixelweise abarbeiten
     var border = [];
@@ -535,13 +682,17 @@ http.createServer(function (req, res) {
         fs.readFile(__dirname + '/images/multistar_correct_edge2.jpg', function(err, data) {
             if (err) throw err;
 
+            // if(query('Debug?', true)) console.log('Debug Ayee');
+            
             var img = new Canvas.Image; // Create a new Image
             img.src = data;
-            // query('Press any key to continue..', true);
+            
             var canvas = Canvas.createCanvas(img.width + extraWhitespace, img.height + extraWhitespace);
             var ctx = canvas.getContext('2d');
+            
             ctx.fillStyle = "white";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
             ctx.drawImage(img, extraWhitespace/2, extraWhitespace/2, img.width, img.height);
 
             var pixeldata = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -550,17 +701,19 @@ http.createServer(function (req, res) {
 
             ctx.putImageData(pixeldata, 0, 0);
             
-            var borders = getBorders(pixeldata);
+            //var borders = getBorders(pixeldata);
+
+            var borders = getBorders2(pixeldata);
 
             console.log(borders);
 
-            var borders = filterBorders(borders, pixeldata);
+            // var borders = filterBorders(borders, pixeldata);
 
             drawBorders(ctx, borders);
 
             //ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-            saveBordersAsImages(canvas, borders);
+            // saveBordersAsImages(canvas, borders);
 
             res.write('<html><body>');
             res.write('<img src="' + canvas.toDataURL() + '" />');
