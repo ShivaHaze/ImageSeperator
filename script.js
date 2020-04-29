@@ -92,7 +92,7 @@ function moveable(direction, currentCoords, pixeldata){
     return accessible;
 }
 
-function getBorders2(pixeldata) {
+function getBorders(pixeldata) {
 
     console.log("Getting borders..");
     
@@ -138,16 +138,19 @@ function getBorders2(pixeldata) {
             rTopLeft            = pixeldata.data[topLeftOffset];
 
             if(border.length == 0){
-                if(JSON.stringify(borders).indexOf(JSON.stringify([x, y])) == -1){
-                    if( r == 255 && rTop == 0 ||
-                        r == 255 && rTopRight == 0 ||
-                        r == 255 && rRight == 0 ||
-                        r == 255 && rBottomRight == 0 ||
-                        r == 255 && rBottom == 0 || 
-                        r == 255 && rBottomLeft == 0 ||
-                        r == 255 && rLeft == 0 ||
-                        r == 255 && rTopLeft == 0){
+                // if( r == 255 && rTop == 255 &&
+                //     r == 255 && rTopRight == 255 &&
+                //     r == 255 && rRight == 255 &&
+                //     r == 255 && rBottomRight == 0 &&
+                //     r == 255 && rBottom == 255 && 
+                //     r == 255 && rBottomLeft == 255 &&
+                //     r == 255 && rLeft == 255 &&
+                //     r == 255 && rTopLeft == 255){
 
+                if( r == 255 && rBottomRight == 0 &&
+                    r == 255 && rRight == 255){
+
+                        if(JSON.stringify(borders).indexOf(JSON.stringify([x, y])) == -1){
                             currentCoords = [x, y];
                             startCoords = [x, y];
                             border.push([x, y]);
@@ -197,9 +200,14 @@ function getBorders2(pixeldata) {
                 }
 
                 if(JSON.stringify(currentCoords) == JSON.stringify(startCoords)){
-                    console.log('finished');
-                    borders.push(border);
-                    border = [];
+                    if(border.length <= 4){
+                        console.log('Object too small - scraped')
+                        border = [];
+                    }else{    
+                        console.log('Object finished');
+                        borders.push(border);
+                        border = [];
+                    }
                 }
             }
         }
@@ -209,112 +217,15 @@ function getBorders2(pixeldata) {
     return borders;
 }
 
-function getBorders(pixeldata) {
-    // Bilddaten pixelweise abarbeiten
-    var border = [];
+function drawState(ctx, pixeldata, location){
 
-    console.log("Getting borders..");
+    offset = (pixeldata.width * location[1] + location[0]) * 4;
+    pixeldata.data[offset] = 0;;   // rot
+    pixeldata.data[offset + 1] = 0; // grün
+    pixeldata.data[offset + 2] = 255; // blau
+    // pixeldata.data[offset + 3]; // Transparenz
 
-    for (x = 0; x < pixeldata.width; x++) {
-
-        for (y = 0; y < pixeldata.height; y++) {
-
-            offset = (pixeldata.width * y + x) * 4;
-            r = pixeldata.data[offset];   // rot
-            g = pixeldata.data[offset + 1]; // grün
-            b = pixeldata.data[offset + 2]; // blau
-            a = pixeldata.data[offset + 3]; // Transparenz
-
-            topOffset           = (pixeldata.width * (y-1) + x) * 4;
-            rTop                = pixeldata.data[topOffset];
-
-            topRightOffset      = (pixeldata.width * (y-1) + (x+1)) * 4;
-            rTopRight           = pixeldata.data[topRightOffset];
-
-            rightOffset         = (pixeldata.width * y + (x+1)) * 4;
-            rRight              = pixeldata.data[rightOffset];
-
-            bottomRightOffset   = (pixeldata.width * (y+1) + (x+1)) * 4;
-            rBottomRight        = pixeldata.data[bottomRightOffset];
-
-            bottomOffset        = (pixeldata.width * (y+1) + x) * 4;
-            rBottom             = pixeldata.data[bottomOffset];
-
-            bottomLeftOffset    = (pixeldata.width * (y+1) + (x-1)) * 4;
-            rBottomLeft         = pixeldata.data[bottomLeftOffset];
-
-            leftOffset          = (pixeldata.width * y + (x-1)) * 4;
-            rLeft               = pixeldata.data[leftOffset];
-            
-            topLeftOffset       = (pixeldata.width * (y-1) + (x-1)) * 4;
-            rTopLeft            = pixeldata.data[topLeftOffset];
-
-            // if((x == 16 || x == 17) && (y == 155 || y == 154 || y == 153)){
-            //     query(x + ' ' + y, true);
-            //     console.log('r', r);
-            //     console.log('rTop', rTop);
-            //     console.log('rTopRight', rTopRight);
-            //     console.log('rRight', rRight);
-            //     console.log('rBottomRight', rBottomRight);
-            //     console.log('rBottom', rBottom);
-            //     console.log('rBottomLeft', rBottomLeft);
-            //     console.log('rLeft', rLeft);
-            //     console.log('rTopLeft', rTopLeft);
-            // }
-
-            // Check around current white pixel if black one is near
-            if( r == 255 && rTop == 0 ||
-                r == 255 && rTopRight == 0 ||
-                r == 255 && rRight == 0 ||
-                r == 255 && rBottomRight == 0 ||
-                r == 255 && rBottom == 0 || 
-                r == 255 && rBottomLeft == 0 ||
-                r == 255 && rLeft == 0 ||
-                r == 255 && rTopLeft == 0){
-
-                    border.push([x, y]);
-            }
-        }
-    }
-
-    console.log("Ordering borders..");
-
-    //Order border array
-    var borderscounter = 0;
-    var borders = [[]];
-
-    var coordFound = undefined;
-
-    borders[borderscounter].push(border[0]);
-    border.shift();
-
-
-    while(border.length > 0){
-
-        coordFound = false;
-
-        for(a = 0; a < border.length; a++){
-
-            lastBlobElement = borders[borderscounter].length-1;
-
-            if(pixelIsTouching(border[a], borders[borderscounter][lastBlobElement])){
-                
-                coordFound = true;
-                borders[borderscounter].push(border[a]);
-                border.splice(a, 1);
-                
-            }
-        }
-
-        if(coordFound == false && border.length > 0){
-            borderscounter++;
-            borders[borderscounter] = [];
-            borders[borderscounter].push(border[0]);
-            border.shift();
-        }
-    }
-
-    return borders;
+    ctx.putImageData(pixeldata, 0, 0);
 }
 
 function drawBorders(ctx, borders) {
@@ -495,7 +406,7 @@ function filterBorders(borders, pixeldata) {
                 coordValues[a][1] > coordValues[b][1] &&
                 coordValues[a][2] < coordValues[b][2] &&
                 coordValues[a][3] < coordValues[b][3]) {
-                    // console.log(a + ' in ' + b);
+                    console.log('a ' + a + ' in b' + b);
                     if(!verifyObjectInObject(coordValues[b], coordValues[a], b, a, borders, pixeldata)){
                         if(!indexToDelete.includes(a)) indexToDelete.push(a);
                     }
@@ -503,7 +414,7 @@ function filterBorders(borders, pixeldata) {
                 coordValues[a][1] < coordValues[b][1] &&
                 coordValues[a][2] > coordValues[b][2] &&
                 coordValues[a][3] > coordValues[b][3]) {
-                    // console.log(b + ' in ' + a);
+                    console.log('b ' + b + ' in a ' +  a);
                     if(!verifyObjectInObject(coordValues[a], coordValues[b], a, b, borders, pixeldata)){
                         if(!indexToDelete.includes(b)) indexToDelete.push(b);
                     }
@@ -526,6 +437,23 @@ function filterBorders(borders, pixeldata) {
     return borders;
 }
 
+function verifyObjectInObject2(outerBB, innerBB, outerIndex, innerIndex, borders, pixeldata) {
+
+    console.log("Verifying that object is in another object..");
+
+    var goalReached = false;
+    var startPointReached = false;
+    var innerBorder = borders[innerIndex];
+    var startPoint = innerBorder[0];
+    var firstHit = false;
+    var movePoint  = [...innerBorder[0]];
+
+
+
+
+    return goalReached
+}
+
 function sortNumber(a, b) {
     return a - b;
 }
@@ -539,16 +467,6 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
 
     // var outerBorder = borders[outerIndex];
     var innerBorder = borders[innerIndex];
-
-
-    // console.log('borders', borders);
-
-    // console.log('outerBB' , outerBB);
-    // console.log('innerBB' , innerBB);
-    // console.log('outerIndex', outerIndex);
-    // console.log('innerIndex', innerIndex);
-
-    // console.log('innerBorder', innerBorder);
 
     var startPoint = innerBorder[0];
     var firstHit = false;
@@ -577,13 +495,15 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
     }
 
     // TypeError: Cannot read property '1' of undefined || Some weird borders are found - why??
-    offset = (pixeldata.width * tempCoords[1][1] + (tempCoords[1][0]+1)) * 4;
-    r = pixeldata.data[offset];
-
+    
+    if(tempCoords.length >= 2) {
+        offset = (pixeldata.width * tempCoords[1][1] + (tempCoords[1][0]+1)) * 4;
+        r = pixeldata.data[offset];
+    }
     // Edgy but works at the moment.
     // done. Not sure if works perfectly "(CHANGE THIS NOT TO TAKE COLOR OF MEDIAN BUT THE SECOND AS IT SHOULD ALWAYS HIT!)"
 
-    if(r == 255){
+    if(r == 255 || tempCoords.length == 1){
         console.log("white");
         colorOfObject = 'white';
     }else{
@@ -591,13 +511,22 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
         colorOfObject = 'black';
     }
 
+    
+    // console.log('outerBB' , outerBB);
+    // console.log('innerBB' , innerBB);
+    // console.log('outerIndex', outerIndex);
+    // console.log('innerIndex', innerIndex);
+
+    // console.log('innerBorder', innerBorder);
+
    // if colorOfObject is white, skip process - it's an inner border       
     if(colorOfObject == 'black'){
         while(goalReached != true && startPointReached != true){
             
-            // console.log('MoveCounter: ', moveSetCounter);
             
-            if(moveSetCounter % 4 == 0){
+            //console.log('MoveCounter: ', moveSetCounter);
+
+            if(moveSetCounter % 4 == 0){ //left
                 offset = (pixeldata.width * movePoint[1] + (movePoint[0]-1)) * 4;
                 r = pixeldata.data[offset];
                 // console.log(r);
@@ -607,7 +536,7 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
                 }else{
                     moveSetCounter++;
                 }
-            }else if(moveSetCounter % 4 == 1){
+            }else if(moveSetCounter % 4 == 1){ // down
                 if(firstHit != true){
                     firstHit = true;
                     startPoint = [...movePoint];
@@ -622,7 +551,7 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
                 }else{
                     moveSetCounter++;
                 }
-            }else if(moveSetCounter % 4 == 2){
+            }else if(moveSetCounter % 4 == 2){ // right
                 offset = (pixeldata.width * movePoint[1] + (movePoint[0]+1)) * 4;
                 r = pixeldata.data[offset];
 
@@ -632,7 +561,7 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
                 }else{
                     moveSetCounter++;
                 }
-            }else if(moveSetCounter % 4 == 3){
+            }else if(moveSetCounter % 4 == 3){ // up
                 offset = (pixeldata.width * (movePoint[1]-1) + movePoint[0]) * 4;
                 r = pixeldata.data[offset];
 
@@ -679,11 +608,9 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
 
 http.createServer(function (req, res) {
     if (req.url != '/favicon.ico') {   
-        fs.readFile(__dirname + '/images/multistar_correct_edge2.jpg', function(err, data) {
+        fs.readFile(__dirname + '/images/micro_border.png', function(err, data) {
             if (err) throw err;
 
-            // if(query('Debug?', true)) console.log('Debug Ayee');
-            
             var img = new Canvas.Image; // Create a new Image
             img.src = data;
             
@@ -700,20 +627,18 @@ http.createServer(function (req, res) {
             pixeldata = filterNoise(pixeldata);
 
             ctx.putImageData(pixeldata, 0, 0);
-            
-            //var borders = getBorders(pixeldata);
 
-            var borders = getBorders2(pixeldata);
+            var borders = getBorders(pixeldata);
 
-            console.log(borders);
 
-            // var borders = filterBorders(borders, pixeldata);
+            // SAVE EVERY PIXEL EVER MET AND CANCEL IF MEETING AGAIN?
+            //var borders = filterBorders(borders, pixeldata);
 
             drawBorders(ctx, borders);
 
             //ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-            // saveBordersAsImages(canvas, borders);
+            //saveBordersAsImages(canvas, borders);
 
             res.write('<html><body>');
             res.write('<img src="' + canvas.toDataURL() + '" />');
