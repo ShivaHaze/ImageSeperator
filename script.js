@@ -436,7 +436,7 @@ function sortNumber(a, b) {
 function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders, pixeldata) {
 
     //console.log("Verifying that object is in another object..");
-
+    console.log(innerIndex, innerBB);
     var goalReached = false;
     var startPointReached = false;
 
@@ -461,6 +461,8 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
 
     var tempCoords = [];
 
+    var moved = false;
+
     // Get Color of inner Object to define exclude rule
     for(a = 0; a < innerBorder.length; a++){
         if(innerBorder[a][0] == innerBB[0]){
@@ -480,20 +482,18 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
         colorOfObject = 'white';
     }
 
-    // console.log('outerBB' , outerBB);
-    // console.log('innerBB' , innerBB);
-    // console.log('outerIndex', outerIndex);
-    // console.log('innerIndex', innerIndex);
 
-    // console.log('innerBorder', innerBorder);
 
-   // if colorOfObject is white, skip process - it's an inner border       
+
+
+    
+    // if colorOfObject is white, skip process - it's an inner border       
     if(colorOfObject == 'black'){
         while(goalReached != true && startPointReached != true){
             
-            
-            console.log('MoveCounter: ', moveSetCounter);
-            console.log('Position: ', movePoint);
+            //if(innerIndex == 48) console.log(movePoint);
+            // console.log('MoveCounter: ', moveSetCounter);
+            // console.log('Position: ', movePoint);
 
             if(moveSetCounter % 4 == 0){ //left
                 offset = (pixeldata.width * movePoint[1] + (movePoint[0]-1)) * 4;
@@ -502,6 +502,7 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
                 if(r == 255){
                     movePoint[0]--;
                     if(moveSetCounter != 0) moveSetCounter--;
+                    moved = true;
                 }else{
                     moveSetCounter++;
                 }
@@ -517,6 +518,7 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
                 if(r == 255){
                     movePoint[1]++;
                     moveSetCounter--;
+                    moved = true;
                 }else{
                     moveSetCounter++;
                 }
@@ -527,6 +529,7 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
                 if(r == 255){
                     movePoint[0]++;
                     moveSetCounter--;
+                    moved = true;
                 }else{
                     moveSetCounter++;
                 }
@@ -537,6 +540,7 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
                 if(r == 255){
                     movePoint[1]--;
                     moveSetCounter--;
+                    moved = true;
                 }else{
                     moveSetCounter++;
                 }
@@ -553,19 +557,20 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
                 movePoint[1] < outerBB[1] ||
                 movePoint[1] > outerBB[3] ) {
                     goalReached = true;
-                    console.log("Goal Reached!");
-                }
+                    console.log("Goal Reached!", startPoint);
+            }
 
             if(movePoint[0] == startPoint[0] &&
-                movePoint[1] == startPoint[1]) {
+                movePoint[1] == startPoint[1] &&
+                moved) {
                     startPointReached = true;
                     // console.log("AYE ", movePoint[0], startPoint[0], movePoint[1], startPoint[1])
-                    console.log("StartPoint Reached!");
-                }
+                    console.log("StartPoint Reached!", startPoint);
+            }
 
             if(moveSetCounter >= 300){
                 startPointReached = true;
-                console.log("Excessive movement, aborting.");
+                console.log("Excessive movement, aborting.", startPoint);
             }
 
             // if(JSON.stringify(outerBorder).indexOf(JSON.stringify(movePoint)) != -1){
@@ -573,7 +578,7 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
             // }
 
             // if(movePoint[0] < outerBB[0]) goalReached = true;
-        
+            moved = false;
         }    
     }
     // console.log('GoalReached ', goalReached);
@@ -606,7 +611,7 @@ function removeInnerBorders(borders, pixeldata){
 
 http.createServer(function (req, res) {
     if (req.url != '/favicon.ico') {   
-        fs.readFile(__dirname + '/images/micro_border.png', function(err, data) {
+        fs.readFile(__dirname + '/images/moebel_border_freeform_closed.jpg', function(err, data) {
             if (err) throw err;
 
             var img = new Canvas.Image; // Create a new Image
@@ -636,7 +641,7 @@ http.createServer(function (req, res) {
 
             //ctx.clearRect(0, 0, canvas.width, canvas.height);
         
-            //saveBordersAsImages(canvas, borders);
+            saveBordersAsImages(canvas, borders);
 
             res.write('<html><body>');
             res.write('<img src="' + canvas.toDataURL() + '" />');
