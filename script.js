@@ -3,30 +3,8 @@ var fs      = require('fs')
 var Canvas  = require('canvas');
 var	query   = require('cli-interact').getYesNo;
 
-// const { createWorker } = require('tesseract.js');
-
-// const worker = createWorker();
-
-// (async () => {
-//     await worker.load();
-//     await worker.loadLanguage('eng');
-//     await worker.initialize('eng');
-//     await worker.setParameters({
-//       tessedit_create_box: '1',
-//       tessedit_create_unlv: '1',
-//       tessedit_create_osd: '1',
-//       tessedit_char_whitelist: '0123456789'
-//     });
-//     const { data: { text, hocr, tsv, box, unlv } } = await worker.recognize('https://i.stack.imgur.com/KVmJd.png');
-//     //console.log(text);
-//     console.log(hocr);
-//     //console.log(tsv);
-//     //console.log(box);
-//     //console.log(unlv);
-//   })();
-
 var noiseThreshold = 200;
-var extraWhitespace = 10;
+var extraWhitespace = 10; // half of it on each side
 
 function pixelIsTouching (coord1, coord2){
 
@@ -406,7 +384,7 @@ function filterBorders(borders, pixeldata) {
                 coordValues[a][1] > coordValues[b][1] &&
                 coordValues[a][2] < coordValues[b][2] &&
                 coordValues[a][3] < coordValues[b][3]) {
-                    console.log('a ' + a + ' in b' + b);
+                    //console.log('a ' + a + ' in b' + b);
                     if(!verifyObjectInObject(coordValues[b], coordValues[a], b, a, borders, pixeldata)){
                         if(!indexToDelete.includes(a)) indexToDelete.push(a);
                     }
@@ -414,7 +392,7 @@ function filterBorders(borders, pixeldata) {
                 coordValues[a][1] < coordValues[b][1] &&
                 coordValues[a][2] > coordValues[b][2] &&
                 coordValues[a][3] > coordValues[b][3]) {
-                    console.log('b ' + b + ' in a ' +  a);
+                    //console.log('b ' + b + ' in a ' +  a);
                     if(!verifyObjectInObject(coordValues[a], coordValues[b], a, b, borders, pixeldata)){
                         if(!indexToDelete.includes(b)) indexToDelete.push(b);
                     }
@@ -424,9 +402,6 @@ function filterBorders(borders, pixeldata) {
 
     indexToDelete.sort(sortNumber);
 
-    //console.log(indexToDelete);
-    
-    // Huge Error, not correctly finding borders IN borders, check micro.png numbers on corners.
     var counter = 0;
 
     for(var x = 0; x < indexToDelete.length; x++){
@@ -460,7 +435,7 @@ function sortNumber(a, b) {
 
 function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders, pixeldata) {
 
-    console.log("Verifying that object is in another object..");
+    //console.log("Verifying that object is in another object..");
 
     var goalReached = false;
     var startPointReached = false;
@@ -494,24 +469,17 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
         }
     }
 
-    // TypeError: Cannot read property '1' of undefined || Some weird borders are found - why??
-    
-    if(tempCoords.length >= 2) {
-        offset = (pixeldata.width * tempCoords[1][1] + (tempCoords[1][0]+1)) * 4;
-        r = pixeldata.data[offset];
-    }
-    // Edgy but works at the moment.
-    // done. Not sure if works perfectly "(CHANGE THIS NOT TO TAKE COLOR OF MEDIAN BUT THE SECOND AS IT SHOULD ALWAYS HIT!)"
+    offset = (pixeldata.width * tempCoords[0][1] + (tempCoords[0][0]-1)) * 4;
+    r = pixeldata.data[offset];
 
-    if(r == 255 || tempCoords.length == 1){
-        console.log("white");
-        colorOfObject = 'white';
-    }else{
-        console.log("black");
+    if(r == 255){
+        // console.log("black");
         colorOfObject = 'black';
+    }else{
+        //console.log("white");
+        colorOfObject = 'white';
     }
 
-    
     // console.log('outerBB' , outerBB);
     // console.log('innerBB' , innerBB);
     // console.log('outerIndex', outerIndex);
@@ -524,7 +492,8 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
         while(goalReached != true && startPointReached != true){
             
             
-            //console.log('MoveCounter: ', moveSetCounter);
+            console.log('MoveCounter: ', moveSetCounter);
+            console.log('Position: ', movePoint);
 
             if(moveSetCounter % 4 == 0){ //left
                 offset = (pixeldata.width * movePoint[1] + (movePoint[0]-1)) * 4;
@@ -594,6 +563,11 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
                     console.log("StartPoint Reached!");
                 }
 
+            if(moveSetCounter >= 300){
+                startPointReached = true;
+                console.log("Excessive movement, aborting.");
+            }
+
             // if(JSON.stringify(outerBorder).indexOf(JSON.stringify(movePoint)) != -1){
             //     hitPoint = movePoint;
             // }
@@ -604,6 +578,30 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
     }
     // console.log('GoalReached ', goalReached);
     return goalReached
+}
+
+function removeInnerBorders(borders, pixeldata){
+
+    var indexToDelete = [];
+
+    for(var a = 0; a < borders.length; a++){
+        console.log(borders[a][0]);
+        offset = (pixeldata.width * (borders[a][0][1]) + (borders[a][0][0]+1)) * 4;
+        r = pixeldata.data[offset]; // Color of current bordered object 
+        console.log(a, r);
+        if(r == 255){ // white
+            indexToDelete.push(a);
+        }
+    }
+
+    var counter = 0;
+    console.log("indexToDelete", indexToDelete);
+    for(var x = 0; x < indexToDelete.length; x++){
+        borders.splice(indexToDelete[x]-counter, 1);
+        counter++;
+    }
+
+    return borders;
 }
 
 http.createServer(function (req, res) {
@@ -630,9 +628,9 @@ http.createServer(function (req, res) {
 
             var borders = getBorders(pixeldata);
 
+            //var borders = removeInnerBorders(borders, pixeldata);
 
-            // SAVE EVERY PIXEL EVER MET AND CANCEL IF MEETING AGAIN?
-            //var borders = filterBorders(borders, pixeldata);
+            var borders = filterBorders(borders, pixeldata);
 
             drawBorders(ctx, borders);
 
