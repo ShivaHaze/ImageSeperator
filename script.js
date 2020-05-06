@@ -3,22 +3,91 @@ var fs      = require('fs')
 var Canvas  = require('canvas');
 var	query   = require('cli-interact').getYesNo;
 
-var noiseThreshold = 200;
+var noiseThreshold = 225; // bigger = more light becomes black (default ~225)
 var extraWhitespace = 10; // half of it on each side
+var sizeThreshold = {     // smaller objects won't get saved   
+    x : 30,
+    y : 30
+}
 
-function pixelIsTouching (coord1, coord2){
+function sortNumber(a, b) {
+    return a - b;
+}
 
-    if(coord1[0] == coord2[0] && 
-      (coord1[1] == coord2[1]+1 ||
-      coord1[1] == coord2[1]-1)){
-        return true;
-    }else if(coord1[1] == coord2[1] && 
-            (coord1[0] == coord2[0]+1 ||
-            coord1[0] == coord2[0]-1)){
-        return true;
-    }else{
-        return false;
+function drawAt(ctx, pixeldata, location){
+
+    offset = (pixeldata.width * location[1] + location[0]) * 4;
+    pixeldata.data[offset] = 0;   // rot
+    pixeldata.data[offset + 1] = 0; // grün
+    pixeldata.data[offset + 2] = 255; // blau
+    // pixeldata.data[offset + 3]; // Transparenz
+
+    ctx.putImageData(pixeldata, 0, 0);
+}
+
+function determineNoiseThreshold(pixeldata) {
+
+    console.log('Determing Noise Threshold..');
+
+    var grayLevels = {};
+    var pixels = 0;
+    var total = 0;
+
+    for (x = 0; x < pixeldata.width; x++) {
+        for (y = 0; y < pixeldata.height; y++) {
+           
+            pixels++;
+
+            offset = (pixeldata.width * y + x) * 4;
+            r = pixeldata.data[offset];   // rot
+            g = pixeldata.data[offset + 1]; // grün
+            b = pixeldata.data[offset + 2]; // blau
+            a = pixeldata.data[offset + 3]; // Transparenz
+
+            grayLevel = Math.round((r + g + b) / 3);
+
+            if(!(grayLevel in grayLevels)){
+                grayLevels[grayLevel] = 1;
+            }else{
+                grayLevels[grayLevel] += 1;
+            }
+        }
     }
+    console.log(pixels);
+    console.log((pixels/100*12.5));
+    for(var x in grayLevels){
+        if(total < (pixels/100*12.5)){
+            total += grayLevels[x];
+        }else{
+            noiseThreshold = x;
+            break;
+        }
+    }
+    console.log(grayLevels);
+    console.log('Noise Threshold set to', x);
+}
+
+function transparentToWhite(pixeldata) {
+    for (x = 0; x < pixeldata.width; x++) {
+
+        for (y = 0; y < pixeldata.height; y++) {
+
+            offset = (pixeldata.width * y + x) * 4;
+            r = pixeldata.data[offset];   // rot
+            g = pixeldata.data[offset + 1]; // grün
+            b = pixeldata.data[offset + 2]; // blau
+            a = pixeldata.data[offset + 3]; // Transparenz
+
+            if(a == 0) {
+                pixeldata.data[offset] = 255;
+                pixeldata.data[offset + 1] = 255;
+                pixeldata.data[offset + 2] = 255;
+                pixeldata.data[offset + 3] = 255;
+            }
+        }
+    }
+
+    return pixeldata;
 }
 
 function filterNoise(pixeldata) {
@@ -179,10 +248,10 @@ function getBorders(pixeldata) {
 
                 if(JSON.stringify(currentCoords) == JSON.stringify(startCoords)){
                     if(border.length <= 4){
-                        console.log('Object too small - scraped')
+                        //console.log('Object too small - scraped')
                         border = [];
                     }else{    
-                        console.log('Object finished');
+                        //console.log('Object finished');
                         borders.push(border);
                         border = [];
                     }
@@ -193,17 +262,6 @@ function getBorders(pixeldata) {
 
 
     return borders;
-}
-
-function drawState(ctx, pixeldata, location){
-
-    offset = (pixeldata.width * location[1] + location[0]) * 4;
-    pixeldata.data[offset] = 0;;   // rot
-    pixeldata.data[offset + 1] = 0; // grün
-    pixeldata.data[offset + 2] = 255; // blau
-    // pixeldata.data[offset + 3]; // Transparenz
-
-    ctx.putImageData(pixeldata, 0, 0);
 }
 
 function drawBorders(ctx, borders) {
@@ -289,7 +347,8 @@ function saveBordersAsImages(img, borders) {
         xDistance = biggestX - smallestX;
         yDistance = biggestY - smallestY;
 
-        var canvas = Canvas.createCanvas(xDistance, yDistance);
+        var canvas = Canvas.createCanvas(xDistance-1, yDistance-1);
+
         var ctx = canvas.getContext('2d');
 
         // Define Clipping Path of currently first border
@@ -303,10 +362,20 @@ function saveBordersAsImages(img, borders) {
         ctx.clip();
 
         // Draw original Image over canvas with clipping area defined
-        ctx.drawImage(img, smallestX, smallestY, xDistance, yDistance, 0, 0, xDistance, yDistance)
-        var pixeldata = ctx.getImageData(0, 0, img.width, img.height);
-        // filterNoise needed here..?
-        pixeldata = filterNoise(pixeldata);
+        ctx.drawImage(img, (smallestX-(extraWhitespace/2)), (smallestY-(extraWhitespace/2)), xDistance, yDistance, -1, -1, xDistance, yDistance)
+    
+        // Enable line below when passing canvas instead of img to this function. i.e. cropping processed image
+        // ctx.drawImage(img, smallestX, smallestY, xDistance, yDistance, -1, -1, xDistance, yDistance)
+
+
+        try{
+            var pixeldata = ctx.getImageData(0, 0, img.width, img.height);
+        }catch(e){
+            console.log('Error while saving occured: ', e);
+        }
+        // filterNoise needed here to get rid of red borders (or disable drawing borders..)
+        // currently not needed as we're cropping from the original image not the processed one (i.e. no drawn borders)
+        // pixeldata = filterNoise(pixeldata);
         pixeldata = transparentToWhite(pixeldata);
         ctx.putImageData(pixeldata, 0, 0);
 
@@ -319,29 +388,6 @@ function saveBordersAsImages(img, borders) {
     }
 
     console.log("Done.\n");
-}
-
-function transparentToWhite(pixeldata) {
-    for (x = 0; x < pixeldata.width; x++) {
-
-        for (y = 0; y < pixeldata.height; y++) {
-
-            offset = (pixeldata.width * y + x) * 4;
-            r = pixeldata.data[offset];   // rot
-            g = pixeldata.data[offset + 1]; // grün
-            b = pixeldata.data[offset + 2]; // blau
-            a = pixeldata.data[offset + 3]; // Transparenz
-
-            if(a == 0) {
-                pixeldata.data[offset] = 255;
-                pixeldata.data[offset + 1] = 255;
-                pixeldata.data[offset + 2] = 255;
-                pixeldata.data[offset + 3] = 255;
-            }
-        }
-    }
-
-    return pixeldata;
 }
 
 function filterBorders(borders, pixeldata) {
@@ -373,10 +419,18 @@ function filterBorders(borders, pixeldata) {
         coordValues.push([smallX, smallY, bigX, bigY]);
     }
 
-    //verifyObjectInObject(borders, coordValues);
+    // Marking object to delete before veryfing (if size threshold is not exceeded)
+    // May be improveable (running time) - But don't delete coordValues, the positions are linked with the border positions
+    for(var x = 0; x < coordValues.length; x++){
+        if(coordValues[x][2] - coordValues[x][0] - 1 < sizeThreshold.x &&
+            coordValues[x][3] - coordValues[x][1] - 1 < sizeThreshold.y){
 
-    //console.log(coordValues);
+                indexToDelete.push(x);
+                //console.log('Object too small - ditching.');
+        }
+    }
 
+    // Checking if Objects are indeed in another Object
     for(var a = 0; a < coordValues.length; a++){
         for(var b = a+1; b < coordValues.length; b++){
 
@@ -412,31 +466,9 @@ function filterBorders(borders, pixeldata) {
     return borders;
 }
 
-function verifyObjectInObject2(outerBB, innerBB, outerIndex, innerIndex, borders, pixeldata) {
-
-    console.log("Verifying that object is in another object..");
-
-    var goalReached = false;
-    var startPointReached = false;
-    var innerBorder = borders[innerIndex];
-    var startPoint = innerBorder[0];
-    var firstHit = false;
-    var movePoint  = [...innerBorder[0]];
-
-
-
-
-    return goalReached
-}
-
-function sortNumber(a, b) {
-    return a - b;
-}
-
 function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders, pixeldata) {
 
     //console.log("Verifying that object is in another object..");
-    console.log(innerIndex, innerBB);
     var goalReached = false;
     var startPointReached = false;
 
@@ -446,7 +478,6 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
     var startPoint = innerBorder[0];
     var firstHit = false;
     var movePoint  = [...innerBorder[0]];
-    // var hitPoint = null;
 
     // var moveSet = {
     //     0: left,
@@ -481,19 +512,10 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
         //console.log("white");
         colorOfObject = 'white';
     }
-
-
-
-
-
     
     // if colorOfObject is white, skip process - it's an inner border       
     if(colorOfObject == 'black'){
         while(goalReached != true && startPointReached != true){
-            
-            //if(innerIndex == 48) console.log(movePoint);
-            // console.log('MoveCounter: ', moveSetCounter);
-            // console.log('Position: ', movePoint);
 
             if(moveSetCounter % 4 == 0){ //left
                 offset = (pixeldata.width * movePoint[1] + (movePoint[0]-1)) * 4;
@@ -545,37 +567,26 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
                     moveSetCounter++;
                 }
             }
-
-
-            // console.log('StartPoint: ', startPoint);
-            // console.log('MovePoint: ' , movePoint);
-            // console.log(outerBB);
-
                         
             if(movePoint[0] < outerBB[0] ||
                 movePoint[0] > outerBB[2] ||
                 movePoint[1] < outerBB[1] ||
                 movePoint[1] > outerBB[3] ) {
                     goalReached = true;
-                    console.log("Goal Reached!", startPoint);
+                    //console.log("Goal Reached!", startPoint);
             }
 
             if(movePoint[0] == startPoint[0] &&
                 movePoint[1] == startPoint[1] &&
                 moved) {
                     startPointReached = true;
-                    // console.log("AYE ", movePoint[0], startPoint[0], movePoint[1], startPoint[1])
-                    console.log("StartPoint Reached!", startPoint);
+                    //console.log("StartPoint Reached!", startPoint);
             }
 
             if(moveSetCounter >= 300){
                 startPointReached = true;
-                console.log("Excessive movement, aborting.", startPoint);
+                //console.log("Excessive movement, aborting.", startPoint);
             }
-
-            // if(JSON.stringify(outerBorder).indexOf(JSON.stringify(movePoint)) != -1){
-            //     hitPoint = movePoint;
-            // }
 
             // if(movePoint[0] < outerBB[0]) goalReached = true;
             moved = false;
@@ -585,33 +596,9 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
     return goalReached
 }
 
-function removeInnerBorders(borders, pixeldata){
-
-    var indexToDelete = [];
-
-    for(var a = 0; a < borders.length; a++){
-        console.log(borders[a][0]);
-        offset = (pixeldata.width * (borders[a][0][1]) + (borders[a][0][0]+1)) * 4;
-        r = pixeldata.data[offset]; // Color of current bordered object 
-        console.log(a, r);
-        if(r == 255){ // white
-            indexToDelete.push(a);
-        }
-    }
-
-    var counter = 0;
-    console.log("indexToDelete", indexToDelete);
-    for(var x = 0; x < indexToDelete.length; x++){
-        borders.splice(indexToDelete[x]-counter, 1);
-        counter++;
-    }
-
-    return borders;
-}
-
 http.createServer(function (req, res) {
     if (req.url != '/favicon.ico') {   
-        fs.readFile(__dirname + '/images/moebel_border_freeform_closed.jpg', function(err, data) {
+        fs.readFile(__dirname + '/images/moebel.jpg', function(err, data) {
             if (err) throw err;
 
             var img = new Canvas.Image; // Create a new Image
@@ -627,21 +614,21 @@ http.createServer(function (req, res) {
 
             var pixeldata = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
+            // Currently buggy - need other strategy
+            //determineNoiseThreshold(pixeldata);
+
             pixeldata = filterNoise(pixeldata);
 
             ctx.putImageData(pixeldata, 0, 0);
 
             var borders = getBorders(pixeldata);
 
-            //var borders = removeInnerBorders(borders, pixeldata);
-
             var borders = filterBorders(borders, pixeldata);
 
             drawBorders(ctx, borders);
 
-            //ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-            saveBordersAsImages(canvas, borders);
+            // send canvas instead of img to receive cropped images from the processed image instead of the original
+            saveBordersAsImages(img, borders);
 
             res.write('<html><body>');
             res.write('<img src="' + canvas.toDataURL() + '" />');
@@ -651,37 +638,3 @@ http.createServer(function (req, res) {
     }
 }).listen(8124, "127.0.0.1");
 console.log('Server running at http://127.0.0.1:8124/\n');
-
-
- 
-
- 
-
-/*
-var cannyEdgeDetector = require('canny-edge-detector');
-var Image = require('image-js').Image;
- 
-Image.load('images/b7b.png').then((img) => {
-  const grey = img.grey();
-  const edge = cannyEdgeDetector(grey, { gaussianBlur:2, lowThreshold: 20, highThreshold:40 });
-  return edge.save('images/edge.png');
-})
-*/ 
-
-/*
-var Jimp = require('jimp');
- 
-var title = 'b7b.png';
-
-// open a file called "lenna.png"
-Jimp.read('images/' + title , (err, picture) => {
-  if (err) throw err;
-  picture
-    //.resize(256, 256) // resize
-    //.quality(60) // set JPEG quality
-    //.greyscale() // set greyscale
-    //.gaussian(2)
-    .blur(10)
-    .write('images/edit_' + title); // save
-});
-*/
