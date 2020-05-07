@@ -5,10 +5,12 @@ var	query   = require('cli-interact').getYesNo;
 
 var noiseThreshold = 225; // bigger = more light becomes black (default ~225)
 var extraWhitespace = 10; // half of it on each side
+var holeThreshold = 1     // max hole size in pixel to bridge 
 var sizeThreshold = {     // smaller objects won't get saved   
-    x : 30,
-    y : 30
+    x : 0,
+    y : 0
 }
+
 
 function sortNumber(a, b) {
     return a - b;
@@ -139,6 +141,94 @@ function moveable(direction, currentCoords, pixeldata){
     return accessible;
 }
 
+function getDirection(lastCoords, currentCoords) {
+
+    if(lastCoords[0] == currentCoords[0] &&
+        lastCoords[1] == currentCoords[1] + 1){
+            return 'down';
+    }else if(lastCoords[0] == currentCoords[0] &&
+            lastCoords[1] == currentCoords[1] - 1){
+            return 'up';
+    }else if(lastCoords[0] == currentCoords[0] + 1 &&
+            lastCoords[1] == currentCoords[1]){
+            return 'right';
+    }else if(lastCoords[0] == currentCoords[0] - 1 &&
+            lastCoords[1] == currentCoords[1]){
+            return 'left';
+    }else{
+        console.log('Error getting direction.');
+    }
+}
+
+function checkForHoles(pixeldata, lastCoords, currentCoords, nextCoords) {
+    
+    var edgePosition = null;
+    var direction = getDirection(lastCoords, currentCoords);
+    var edgeX = null;
+    var edgeY = null;
+
+    // check for pixel near to fill hole, going clockwise, spectating quarter-circle in direction counter clockwise to clockwise
+
+    for(var a = 0; a <= holeThreshold + 1; a++){
+        for(var b = 0; b <= holeThreshold + 1; b++){
+            
+            offset = null;
+
+            if(a < 2){
+                // first two steps not relevant
+                if(b >= 2){
+
+                    if(direction == 'up'){
+                        offset = (pixeldata.width * (currentCoords[1] - a) + (currentCoords[0] - b)) * 4;
+                    }else if(direction == 'right'){
+                        offset = (pixeldata.width * (currentCoords[1] - a) + (currentCoords[0] + b)) * 4;
+                    }else if(direction == 'down'){
+                        offset = (pixeldata.width * (currentCoords[1] + a) + (currentCoords[0] + b)) * 4;
+                    }else if(direction == 'left'){
+                        offset = (pixeldata.width * (currentCoords[1] + a) + (currentCoords[0] - b)) * 4;
+                    }
+                }
+            }else{
+                if(direction == 'up'){
+                    offset = (pixeldata.width * (currentCoords[1] - a) + (currentCoords[0] - b)) * 4;
+                }else if(direction == 'right'){
+                    offset = (pixeldata.width * (currentCoords[1] - a) + (currentCoords[0] + b)) * 4;
+                }else if(direction == 'down'){
+                    offset = (pixeldata.width * (currentCoords[1] + a) + (currentCoords[0] + b)) * 4;
+                }else if(direction == 'left'){
+                    offset = (pixeldata.width * (currentCoords[1] + a) + (currentCoords[0] - b)) * 4;
+                }
+            }
+            if(offset !== null){
+                r = pixeldata.data[offset];   // rot
+                if(r == 0){
+                    console.log('Pixel in radius');
+
+                    if(direction == 'up'){
+                        edgeX = currentCoords[0] - b;
+                        edgeY = currentCoords[1] - a;
+                    }else if(direction == 'right'){
+                        edgeX = currentCoords[0] + b;
+                        edgeY = currentCoords[1] - a;
+                    }else if(direction == 'down'){
+                        edgeX = currentCoords[0] + b;
+                        edgeY = currentCoords[1] + a;
+                    }else if(direction == 'left'){
+                        edgeX = currentCoords[0] - b;
+                        edgeY = currentCoords[1] + a;
+                    }
+
+                    edgePosition = [edgeX, edgeY];
+
+                    return edgePosition;
+                }
+            }
+        }
+    }
+
+    return false;
+}
+
 function getBorders(pixeldata) {
 
     console.log("Getting borders..");
@@ -149,6 +239,8 @@ function getBorders(pixeldata) {
     var currentCoords = [];
     var startCoords = [];
     var facing = 'right';
+
+    var lastCoords = null;
 
     for (x = 0; x < pixeldata.width; x++) {
 
@@ -200,6 +292,7 @@ function getBorders(pixeldata) {
                         if(JSON.stringify(borders).indexOf(JSON.stringify([x, y])) == -1){
                             currentCoords = [x, y];
                             startCoords = [x, y];
+                            lastCoords = [x, y];
                             border.push([x, y]);
                     }
                 }
@@ -213,6 +306,16 @@ function getBorders(pixeldata) {
                 }else{
                     if(facing == 'up'){
                         if(moveable('up', currentCoords, pixeldata)){
+
+
+
+                            // if(checkForHoles(pixeldata, lastCoords, currentCoords, move('up', currentCoords))){
+
+                            // }
+                            
+        
+                            // lastCoords = [...currentCoords];
+
                             currentCoords = move('up', currentCoords);
                             border.push(currentCoords);
                             facing = 'right';
@@ -598,7 +701,7 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
 
 http.createServer(function (req, res) {
     if (req.url != '/favicon.ico') {   
-        fs.readFile(__dirname + '/images/moebel.jpg', function(err, data) {
+        fs.readFile(__dirname + '/images/holes.png', function(err, data) {
             if (err) throw err;
 
             var img = new Canvas.Image; // Create a new Image
