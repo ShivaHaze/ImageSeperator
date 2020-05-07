@@ -5,7 +5,7 @@ var	query   = require('cli-interact').getYesNo;
 
 var noiseThreshold = 225; // bigger = more light becomes black (default ~225)
 var extraWhitespace = 10; // half of it on each side
-var holeThreshold = 1     // max hole size in pixel to bridge 
+var holeThreshold = 2     // max hole size in pixel to bridge 
 var sizeThreshold = {     // smaller objects won't get saved   
     x : 0,
     y : 0
@@ -141,20 +141,20 @@ function moveable(direction, currentCoords, pixeldata){
     return accessible;
 }
 
-function getDirection(lastCoords, currentCoords) {
+function getDirection(currentCoords, nextCoords) {
 
-    if(lastCoords[0] == currentCoords[0] &&
-        lastCoords[1] == currentCoords[1] + 1){
-            return 'down';
-    }else if(lastCoords[0] == currentCoords[0] &&
-            lastCoords[1] == currentCoords[1] - 1){
+    if(currentCoords[0] == nextCoords[0] &&
+        currentCoords[1] == nextCoords[1] + 1){
             return 'up';
-    }else if(lastCoords[0] == currentCoords[0] + 1 &&
-            lastCoords[1] == currentCoords[1]){
-            return 'right';
-    }else if(lastCoords[0] == currentCoords[0] - 1 &&
-            lastCoords[1] == currentCoords[1]){
+    }else if(currentCoords[0] == nextCoords[0] &&
+            currentCoords[1] == nextCoords[1] - 1){
+            return 'down';
+    }else if(currentCoords[0] == nextCoords[0] + 1 &&
+            currentCoords[1] == nextCoords[1]){
             return 'left';
+    }else if(currentCoords[0] == nextCoords[0] - 1 &&
+            currentCoords[1] == nextCoords[1]){
+            return 'right';
     }else{
         console.log('Error getting direction.');
     }
@@ -163,68 +163,133 @@ function getDirection(lastCoords, currentCoords) {
 function checkForHoles(pixeldata, lastCoords, currentCoords, nextCoords) {
     
     var edgePosition = null;
-    var direction = getDirection(lastCoords, currentCoords);
+    // var direction = getDirection(lastCoords, currentCoords);
+    var direction = getDirection(currentCoords, nextCoords);
     var edgeX = null;
     var edgeY = null;
 
     // check for pixel near to fill hole, going clockwise, spectating quarter-circle in direction counter clockwise to clockwise
+
+    console.log('checking holes in direction', direction, 'current', currentCoords, 'next', nextCoords);
 
     for(var a = 0; a <= holeThreshold + 1; a++){
         for(var b = 0; b <= holeThreshold + 1; b++){
             
             offset = null;
 
+            // console.log('a', a, 'b', b)
+
             if(a < 2){
                 // first two steps not relevant
                 if(b >= 2){
-
                     if(direction == 'up'){
-                        offset = (pixeldata.width * (currentCoords[1] - a) + (currentCoords[0] - b)) * 4;
+                        offset = (pixeldata.width * (nextCoords[1] - a) + (nextCoords[0] - b)) * 4;
+
+                        console.log('short-up', nextCoords[0] - b , nextCoords[1] - a);
+
                     }else if(direction == 'right'){
-                        offset = (pixeldata.width * (currentCoords[1] - a) + (currentCoords[0] + b)) * 4;
+                        offset = (pixeldata.width * (nextCoords[1] - a) + (nextCoords[0] + b)) * 4;
+
+                        console.log('short-right', nextCoords[0] + b, nextCoords[1] - a);
+
                     }else if(direction == 'down'){
-                        offset = (pixeldata.width * (currentCoords[1] + a) + (currentCoords[0] + b)) * 4;
+                        offset = (pixeldata.width * (nextCoords[1] + a) + (nextCoords[0] + b)) * 4;
+
+                        console.log('short-down', nextCoords[0] + b, nextCoords[1] + a);
+
                     }else if(direction == 'left'){
-                        offset = (pixeldata.width * (currentCoords[1] + a) + (currentCoords[0] - b)) * 4;
+                        offset = (pixeldata.width * (nextCoords[1] + a) + (nextCoords[0] - b)) * 4;
+
+                        console.log('short-left', nextCoords[0] - b, nextCoords[1] + a);
+
                     }
                 }
             }else{
                 if(direction == 'up'){
-                    offset = (pixeldata.width * (currentCoords[1] - a) + (currentCoords[0] - b)) * 4;
+                    offset = (pixeldata.width * (nextCoords[1] - a) + (nextCoords[0] - b)) * 4;
+
+                    console.log('up', nextCoords[0] - b, nextCoords[1] - a);
+
                 }else if(direction == 'right'){
-                    offset = (pixeldata.width * (currentCoords[1] - a) + (currentCoords[0] + b)) * 4;
+                    offset = (pixeldata.width * (nextCoords[1] - a) + (nextCoords[0] + b)) * 4;
+
+                    console.log('right', nextCoords[0] + b, nextCoords[1] - a);
+
                 }else if(direction == 'down'){
-                    offset = (pixeldata.width * (currentCoords[1] + a) + (currentCoords[0] + b)) * 4;
+                    offset = (pixeldata.width * (nextCoords[1] + a) + (nextCoords[0] + b)) * 4;
+
+                    console.log('down', nextCoords[0] + b, nextCoords[1] + a);
+
                 }else if(direction == 'left'){
-                    offset = (pixeldata.width * (currentCoords[1] + a) + (currentCoords[0] - b)) * 4;
+                    offset = (pixeldata.width * (nextCoords[1] + a) + (nextCoords[0] - b)) * 4;
+
+                    console.log('left', nextCoords[0] - b, nextCoords[1] + a);
+
                 }
             }
             if(offset !== null){
                 r = pixeldata.data[offset];   // rot
-                if(r == 0){
-                    console.log('Pixel in radius');
 
+                console.log('r', r);
+                
+                if(r == 0){
                     if(direction == 'up'){
-                        edgeX = currentCoords[0] - b;
-                        edgeY = currentCoords[1] - a;
+                        edgeX = nextCoords[0] - b;
+                        edgeY = nextCoords[1] - a;
+                        if(edgeY == nextCoords[1]){
+
+                            console.log("true up");
+
+                            query('hit', true);
+
+                            return true
+                        }
                     }else if(direction == 'right'){
-                        edgeX = currentCoords[0] + b;
-                        edgeY = currentCoords[1] - a;
+                        edgeX = nextCoords[0] + b;
+                        edgeY = nextCoords[1] - a;
+                        if(edgeX == nextCoords[0]){
+
+                            console.log("true right");
+
+                            query('hit', true);
+
+                            return true
+                        }
                     }else if(direction == 'down'){
-                        edgeX = currentCoords[0] + b;
-                        edgeY = currentCoords[1] + a;
+                        edgeX = nextCoords[0] + b;
+                        edgeY = nextCoords[1] + a;
+                        if(edgeY == nextCoords[1]){
+
+                            console.log("true down");
+
+                            query('hit', true);
+
+                            return true
+                        }
                     }else if(direction == 'left'){
-                        edgeX = currentCoords[0] - b;
-                        edgeY = currentCoords[1] + a;
+                        edgeX = nextCoords[0] - b;
+                        edgeY = nextCoords[1] + a;
+                        if(edgeX == nextCoords[0]){
+
+                            console.log("true left");
+
+                            query('hit', true);
+
+                            return true;
+                        }
                     }
 
-                    edgePosition = [edgeX, edgeY];
+                    // edgePosition = [edgeX, edgeY];
 
-                    return edgePosition;
+                    // console.log(nextCoords, 'Pixel in radius at', edgePosition);
+
+                    // return edgePosition;
                 }
             }
         }
     }
+
+    console.log("false");
 
     return false;
 }
@@ -299,6 +364,7 @@ function getBorders(pixeldata) {
             }
 
             while(border.length > 0){
+
                 if(border.length == 1){
                     currentCoords = move('right', currentCoords);
                     border.push(currentCoords);
@@ -307,42 +373,60 @@ function getBorders(pixeldata) {
                     if(facing == 'up'){
                         if(moveable('up', currentCoords, pixeldata)){
 
+                            if(checkForHoles(pixeldata, lastCoords, currentCoords, move('up', currentCoords)) === true){
+                                facing = 'left';
+                            }else{
+                                lastCoords = [...currentCoords];
 
-
-                            // if(checkForHoles(pixeldata, lastCoords, currentCoords, move('up', currentCoords))){
-
-                            // }
-                            
-        
-                            // lastCoords = [...currentCoords];
-
-                            currentCoords = move('up', currentCoords);
-                            border.push(currentCoords);
-                            facing = 'right';
+                                currentCoords = move('up', currentCoords);
+                                border.push(currentCoords);
+                                facing = 'right';
+                            }
                         }else{
                             facing = 'left';
                         }
                     }else if(facing == 'right'){
                         if(moveable('right', currentCoords, pixeldata)){
-                            currentCoords = move('right', currentCoords);
-                            border.push(currentCoords);
-                            facing = 'down';
+
+                            if(checkForHoles(pixeldata, lastCoords, currentCoords, move('right', currentCoords)) === true){
+                                facing = 'up';
+                            }else{
+                                lastCoords = [...currentCoords];
+
+                                currentCoords = move('right', currentCoords);
+                                border.push(currentCoords);
+                                facing = 'down';
+                            }
                         }else{
                             facing = 'up';
                         }
                     }else if(facing == 'down'){
                         if(moveable('down', currentCoords, pixeldata)){
-                            currentCoords = move('down', currentCoords);
-                            border.push(currentCoords);
-                            facing = 'left';
+
+                            if(checkForHoles(pixeldata, lastCoords, currentCoords, move('down', currentCoords)) === true){
+                                facing = 'right';
+                            }else{
+                                lastCoords = [...currentCoords];
+
+                                currentCoords = move('down', currentCoords);
+                                border.push(currentCoords);
+                                facing = 'left';
+                            }
                         }else{
                             facing = 'right';
                         }
                     }else if(facing == 'left'){
                         if(moveable('left', currentCoords, pixeldata)){
-                            currentCoords = move('left', currentCoords);
-                            border.push(currentCoords);
-                            facing = 'up';
+
+                            if(checkForHoles(pixeldata, lastCoords, currentCoords, move('left', currentCoords)) === true){
+                                facing = 'down';
+                            }else{
+                                lastCoords = [...currentCoords];
+
+                                currentCoords = move('left', currentCoords);
+                                border.push(currentCoords);
+                                facing = 'up';
+                            }
                         }else{
                             facing = 'down';
                         }
