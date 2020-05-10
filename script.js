@@ -179,7 +179,7 @@ function checkForHoles(pixeldata, lastCoords, currentCoords, nextCoords) {
 
             // console.log('a', a, 'b', b)
 
-            if(a < 2){
+            if(a < 1){
                 // first two steps not relevant
                 if(b >= 2){
                     if(direction == 'up'){
@@ -247,6 +247,8 @@ function checkForHoles(pixeldata, lastCoords, currentCoords, nextCoords) {
                     }else if(direction == 'right'){
                         edgeX = nextCoords[0] + b;
                         edgeY = nextCoords[1] - a;
+
+                        // console.log('nextcoords', nextCoords, 'edgecoords', edgeX, edgeY);
                         if(edgeX == nextCoords[0]){
 
                             console.log("true right");
@@ -366,9 +368,14 @@ function getBorders(pixeldata) {
             while(border.length > 0){
 
                 if(border.length == 1){
-                    currentCoords = move('right', currentCoords);
-                    border.push(currentCoords);
-                    facing = 'down';
+
+                    if(checkForHoles(pixeldata, lastCoords, currentCoords, move('right', currentCoords)) === true){
+                        facing = 'up';
+                    }else{
+                        currentCoords = move('right', currentCoords);
+                        border.push(currentCoords);
+                        facing = 'down';
+                    }
                 }else{
                     if(facing == 'up'){
                         if(moveable('up', currentCoords, pixeldata)){
