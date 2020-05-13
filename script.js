@@ -1,7 +1,8 @@
-var http    = require('http')
-var fs      = require('fs') 
-var Canvas  = require('canvas');
-var	query   = require('cli-interact').getYesNo;
+var http        = require('http')
+var fs          = require('fs') 
+var Canvas      = require('canvas');
+var	query       = require('cli-interact').getYesNo;
+var cliProgress = require('cli-progress');
 
 var noiseThreshold = 225; // bigger = more light becomes black (default ~225)
 var extraWhitespace = 10; // half of it on each side
@@ -11,6 +12,12 @@ var sizeThreshold = {     // smaller objects won't get saved
     y : 0
 }
 
+const progressBar = new cliProgress.SingleBar({
+    format: '|{bar}| {percentage}% || {value}/{total} Chunkz || {duration_formatted} || ETA: {eta_formatted}',
+    barCompleteChar: '\u2588',
+    barIncompleteChar: '\u2591',
+    hideCursor: true
+});
 
 function sortNumber(a, b) {
     return a - b;
@@ -162,6 +169,8 @@ function getDirection(currentCoords, nextCoords) {
 
 function checkForHoles(pixeldata, lastCoords, currentCoords, nextCoords) {
     
+    return false;
+
     var edgePosition = null;
     // var direction = getDirection(lastCoords, currentCoords);
     var direction = getDirection(currentCoords, nextCoords);
@@ -299,7 +308,9 @@ function checkForHoles(pixeldata, lastCoords, currentCoords, nextCoords) {
 function getBorders(pixeldata) {
 
     console.log("Getting borders..");
-    
+
+    progressBar.start((pixeldata.width*pixeldata.height), 0, {});
+
     var border = [];
     var borders = [];
     
@@ -315,6 +326,8 @@ function getBorders(pixeldata) {
     for (x = 0; x < pixeldata.width; x++) {
 
         for (y = 0; y < pixeldata.height; y++) {
+
+            progressBar.increment();
 
             offset = (pixeldata.width * y + x) * 4;
             r = pixeldata.data[offset];   // rot
@@ -359,11 +372,21 @@ function getBorders(pixeldata) {
                 if( r == 255 && rBottomRight == 0 &&
                     r == 255 && rRight == 255){
 
-                        if(JSON.stringify(borders).indexOf(JSON.stringify([x, y])) == -1){
-                            currentCoords = [x, y];
-                            startCoords = [x, y];
-                            lastCoords = [x, y];
-                            border.push([x, y]);
+                    if(JSON.stringify(borders).indexOf(JSON.stringify([x, y])) == -1){
+                        currentCoords = [x, y];
+                        startCoords = [x, y];
+                        lastCoords = [x, y];
+                        border.push([x, y]);
+                    }else if(JSON.stringify(borders).indexOf(JSON.stringify([(x+1), y])) == -1){
+                        currentCoords = [x, y];
+                        startCoords = [x, y];
+                        lastCoords = [x, y];
+                        border.push([x, y]);
+                    }else if(JSON.stringify(borders).indexOf(JSON.stringify([x, (y+1)])) == -1 && rBottom == 255){
+                        currentCoords = [x, y];
+                        startCoords = [x, y];
+                        lastCoords = [x, y];
+                        border.push([x, y]);
                     }
                 }
             }
@@ -525,6 +548,7 @@ function getBorders(pixeldata) {
         }
     }
 
+    progressBar.stop();
 
     return borders;
 }
@@ -657,7 +681,7 @@ function saveBordersAsImages(img, borders) {
 
 function filterBorders(borders, pixeldata) {
 
-    console.log("Filtering borders..")
+    console.log("Filtering borders..");
 
     var smallX = null;
     var smallY = null;
@@ -698,13 +722,14 @@ function filterBorders(borders, pixeldata) {
     // Checking if Objects are indeed in another Object
     for(var a = 0; a < coordValues.length; a++){
         for(var b = a+1; b < coordValues.length; b++){
-
+            
             if(coordValues[a][0] > coordValues[b][0] &&
                 coordValues[a][1] > coordValues[b][1] &&
                 coordValues[a][2] < coordValues[b][2] &&
                 coordValues[a][3] < coordValues[b][3]) {
                     //console.log('a ' + a + ' in b' + b);
                     if(!verifyObjectInObject(coordValues[b], coordValues[a], b, a, borders, pixeldata)){
+                        // console.log('Delete Flagging Index a', a);
                         if(!indexToDelete.includes(a)) indexToDelete.push(a);
                     }
             }else if(coordValues[a][0] < coordValues[b][0] &&
@@ -713,6 +738,7 @@ function filterBorders(borders, pixeldata) {
                 coordValues[a][3] > coordValues[b][3]) {
                     //console.log('b ' + b + ' in a ' +  a);
                     if(!verifyObjectInObject(coordValues[a], coordValues[b], a, b, borders, pixeldata)){
+                        // console.log('Delete Flagging Index b', b);
                         if(!indexToDelete.includes(b)) indexToDelete.push(b);
                     }
             }
@@ -755,22 +781,45 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
 
     var colorOfObject = null;
 
-    var tempCoords = [];
+    var tempCoords = {};
 
     var moved = false;
-
     // Get Color of inner Object to define exclude rule
-    for(a = 0; a < innerBorder.length; a++){
-        if(innerBorder[a][0] == innerBB[0]){
-            // Min X point, go one right, check color
-            tempCoords.push(innerBorder[a]);
+    // Min X point, go one left, check color 
+    // Also Max X Min Y and Max Y?
+    for(a = 0; a < innerBorder.length; a++){        
+        if(innerBorder[a][0] == innerBB[0] && (!('left' in tempCoords))){
+            tempCoords['left'] = innerBorder[a];
+        }
+        if(innerBorder[a][1] == innerBB[1] && (!('top' in tempCoords))){
+            tempCoords['top'] = innerBorder[a];
+        }
+        if(innerBorder[a][0] == innerBB[2] && (!('right' in tempCoords))){
+            tempCoords['right'] = innerBorder[a];
+        }
+        if(innerBorder[a][1] == innerBB[3] && (!('bottom' in tempCoords))){
+            tempCoords['bottom'] = innerBorder[a];
         }
     }
 
-    offset = (pixeldata.width * tempCoords[0][1] + (tempCoords[0][0]-1)) * 4;
-    r = pixeldata.data[offset];
+    // if(innerIndex == 34 || innerIndex == 35) { 
+        // console.log(tempCoords);
+    // }
 
-    if(r == 255){
+    topOffset = (pixeldata.width * tempCoords['top'][1]-1 + (tempCoords['top'][0])) * 4;
+    rightOffset = (pixeldata.width * tempCoords['right'][1] + (tempCoords['right'][0]+1)) * 4;
+    bottomOffset = (pixeldata.width * tempCoords['bottom'][1]+1 + (tempCoords['bottom'][0])) * 4;
+    leftOffset = (pixeldata.width * tempCoords['left'][1] + (tempCoords['left'][0]-1)) * 4;
+
+    rTop = pixeldata.data[topOffset];
+    rRight = pixeldata.data[rightOffset];
+    rBottom = pixeldata.data[bottomOffset];
+    rLeft = pixeldata.data[leftOffset];
+
+    // offset = (pixeldata.width * tempCoords[0][1] + (tempCoords[0][0]-1)) * 4;
+    // r = pixeldata.data[offset];
+
+    if(rTop == 255 || rRight == 255 || rBottom == 255 || rLeft == 255){
         // console.log("black");
         colorOfObject = 'black';
     }else{
@@ -778,6 +827,8 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
         colorOfObject = 'white';
     }
     
+
+
     // if colorOfObject is white, skip process - it's an inner border       
     if(colorOfObject == 'black'){
         while(goalReached != true && startPointReached != true){
@@ -879,7 +930,8 @@ http.createServer(function (req, res) {
 
             var pixeldata = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-            // Currently buggy - need other strategy
+            // Currently buggy - need other strategy - or simply discard the idea (might be a bad decision)
+            // How about a fixed threshold that only get "pulled" up/down depending on specific values
             //determineNoiseThreshold(pixeldata);
 
             pixeldata = filterNoise(pixeldata);
@@ -889,7 +941,7 @@ http.createServer(function (req, res) {
             var borders = getBorders(pixeldata);
 
             var borders = filterBorders(borders, pixeldata);
-
+        
             drawBorders(ctx, borders);
 
             // send canvas instead of img to receive cropped images from the processed image instead of the original
