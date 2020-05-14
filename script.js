@@ -826,8 +826,6 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
         //console.log("white");
         colorOfObject = 'white';
     }
-    
-
 
     // if colorOfObject is white, skip process - it's an inner border       
     if(colorOfObject == 'black'){
