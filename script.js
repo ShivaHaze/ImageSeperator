@@ -6,7 +6,7 @@ var cliProgress = require('cli-progress');
 
 var noiseThreshold = 225; // bigger = more light becomes black (default ~225)
 var extraWhitespace = 10; // half of it on each side
-var holeThreshold = 2     // max hole size in pixel to bridge 
+var holeThreshold = 3     // max hole size in pixel to bridge 
 var sizeThreshold = {     // smaller objects won't get saved   
     x : 0,
     y : 0
@@ -168,14 +168,15 @@ function getDirection(currentCoords, nextCoords) {
 }
 
 function checkForHoles(pixeldata, lastCoords, currentCoords, nextCoords) {
-    
-    return false;
+
 
     var edgePosition = null;
     // var direction = getDirection(lastCoords, currentCoords);
     var direction = getDirection(currentCoords, nextCoords);
     var edgeX = null;
     var edgeY = null;
+
+    var goAhead = false;
 
     // check for pixel near to fill hole, going clockwise, spectating quarter-circle in direction counter clockwise to clockwise
 
@@ -186,123 +187,126 @@ function checkForHoles(pixeldata, lastCoords, currentCoords, nextCoords) {
             
             offset = null;
 
-            // console.log('a', a, 'b', b)
-
-            if(a < 1){
-                // first two steps not relevant
-                if(b >= 2){
-                    if(direction == 'up'){
-                        offset = (pixeldata.width * (nextCoords[1] - a) + (nextCoords[0] - b)) * 4;
-
-                        // console.log('short-up', nextCoords[0] - b , nextCoords[1] - a);
-
-                    }else if(direction == 'right'){
-                        offset = (pixeldata.width * (nextCoords[1] - a) + (nextCoords[0] + b)) * 4;
-
-                        // console.log('short-right', nextCoords[0] + b, nextCoords[1] - a);
-
-                    }else if(direction == 'down'){
-                        offset = (pixeldata.width * (nextCoords[1] + a) + (nextCoords[0] + b)) * 4;
-
-                        // console.log('short-down', nextCoords[0] + b, nextCoords[1] + a);
-
-                    }else if(direction == 'left'){
-                        offset = (pixeldata.width * (nextCoords[1] + a) + (nextCoords[0] - b)) * 4;
-
-                        // console.log('short-left', nextCoords[0] - b, nextCoords[1] + a);
-
-                    }
+            // Correct spectating !
+            if(direction == 'up'){
+                if(a == 0 && b >= 2 || a >= 1){
+                    offset = (pixeldata.width * (nextCoords[1] - b) + (nextCoords[0] - a)) * 4;
+                    // console.log('Specating', (nextCoords[1] - b), (nextCoords[0] - a));
                 }
-            }else{
-                if(direction == 'up'){
-                    offset = (pixeldata.width * (nextCoords[1] - a) + (nextCoords[0] - b)) * 4;
 
-                    // console.log('up', nextCoords[0] - b, nextCoords[1] - a);
+            }else if(direction == 'right'){
+                if(a == 0 && b >= 1 || a == 1 && b >= 1 || a >= 2){
+                    offset = (pixeldata.width * (nextCoords[1] - b) + (nextCoords[0] + a)) * 4;
+                    // console.log('Specating', (nextCoords[1] - b), (nextCoords[0] + a));
+                }
+                
+            }else if(direction == 'down'){
+                if(a == 0 && b >= 2 || a >= 1){
+                    offset = (pixeldata.width * (nextCoords[1] + b) + (nextCoords[0] + a)) * 4;
+                    // console.log('Specating', (nextCoords[1] + b), (nextCoords[0] + a));
+                }
 
-                }else if(direction == 'right'){
-                    offset = (pixeldata.width * (nextCoords[1] - a) + (nextCoords[0] + b)) * 4;
-
-                    // console.log('right', nextCoords[0] + b, nextCoords[1] - a);
-
-                }else if(direction == 'down'){
-                    offset = (pixeldata.width * (nextCoords[1] + a) + (nextCoords[0] + b)) * 4;
-
-                    // console.log('down', nextCoords[0] + b, nextCoords[1] + a);
-
-                }else if(direction == 'left'){
-                    offset = (pixeldata.width * (nextCoords[1] + a) + (nextCoords[0] - b)) * 4;
-
-                    // console.log('left', nextCoords[0] - b, nextCoords[1] + a);
-
+            }else if(direction == 'left'){
+                if(a == 0 && b >= 1 || a == 1 && b >= 1 || a >= 2){
+                    offset = (pixeldata.width * (nextCoords[1] + b) + (nextCoords[0] - a)) * 4; 
+                    // console.log('Specating', (nextCoords[1] + b), (nextCoords[0] - a));    
                 }
             }
+            
             if(offset !== null){
                 r = pixeldata.data[offset];   // rot
 
-                // console.log('r', r);
-                
                 if(r == 0){
-                    if(direction == 'up'){
-                        edgeX = nextCoords[0] - b;
-                        edgeY = nextCoords[1] - a;
-                        if(edgeY == nextCoords[1]){
 
-                            // console.log("true up");
 
-                            query('hit', true);
-
-                            return true
-                        }
-                    }else if(direction == 'right'){
-                        edgeX = nextCoords[0] + b;
-                        edgeY = nextCoords[1] - a;
-
-                        // console.log('nextcoords', nextCoords, 'edgecoords', edgeX, edgeY);
-                        if(edgeX == nextCoords[0]){
-
-                            // console.log("true right");
-
-                            query('hit', true);
-
-                            return true
-                        }
-                    }else if(direction == 'down'){
-                        edgeX = nextCoords[0] + b;
-                        edgeY = nextCoords[1] + a;
-                        if(edgeY == nextCoords[1]){
-
-                            // console.log("true down");
-
-                            query('hit', true);
-
-                            return true
-                        }
-                    }else if(direction == 'left'){
-                        edgeX = nextCoords[0] - b;
-                        edgeY = nextCoords[1] + a;
-                        if(edgeX == nextCoords[0]){
-
-                            // console.log("true left");
-
-                            query('hit', true);
-
-                            return true;
-                        }
-                    }
-
-                    // edgePosition = [edgeX, edgeY];
-
-                    // console.log(nextCoords, 'Pixel in radius at', edgePosition);
-
-                    // return edgePosition;
                 }
             }
+
+
+            // if(offset !== null){
+            //     r = pixeldata.data[offset];   // rot
+
+            //     if(r == 0){
+            //         if(direction == 'up'){
+            //             edgeX = nextCoords[0] - a;
+            //             edgeY = nextCoords[1] - b;
+            //             if(edgeY == nextCoords[1]){
+
+            //                 // console.log("true up");
+            //                 nextStepOffset = (pixeldata.width * nextCoords[1] + nextCoords[0]) * 4;
+            //                 pixeldata.data[nextStepOffset] = 0;
+            //                 pixeldata.data[nextStepOffset+1] = 0;
+            //                 pixeldata.data[nextStepOffset+2] = 0;
+            //                 query('hit', true);
+
+            //                 return true
+            //             }else{
+            //                 goAhead = true;
+            //             }
+            //         }else if(direction == 'right'){
+            //             edgeX = nextCoords[0] + a;
+            //             edgeY = nextCoords[1] - b;
+
+            //             // console.log('nextcoords', nextCoords, 'edgecoords', edgeX, edgeY);
+            //             if(edgeX == nextCoords[0]){
+
+            //                 // console.log("true right");
+            //                 nextStepOffset = (pixeldata.width * nextCoords[1] + nextCoords[0]) * 4;
+            //                 pixeldata.data[nextStepOffset] = 0;
+            //                 pixeldata.data[nextStepOffset+1] = 0;
+            //                 pixeldata.data[nextStepOffset+2] = 0;
+            //                 query('hit', true);
+
+            //                 return true
+            //             }else{
+            //                 goAhead = true;
+            //             }
+            //         }else if(direction == 'down'){
+            //             edgeX = nextCoords[0] + a;
+            //             edgeY = nextCoords[1] + b;
+            //             console.log(edgeX, edgeY, nextCoords[1]);
+            //             if(edgeY == nextCoords[1]){
+
+            //                 // console.log("true down");
+            //                 nextStepOffset = (pixeldata.width * nextCoords[1] + nextCoords[0]) * 4;
+            //                 pixeldata.data[nextStepOffset] = 0;
+            //                 pixeldata.data[nextStepOffset+1] = 0;
+            //                 pixeldata.data[nextStepOffset+2] = 0;
+            //                 query('hit', true);
+
+            //                 return true
+            //             }else{
+            //                 goAhead = true;
+            //             }
+            //         }else if(direction == 'left'){
+            //             edgeX = nextCoords[0] - a;
+            //             edgeY = nextCoords[1] + b;
+            //             if(edgeX == nextCoords[0]){
+
+            //                 // console.log("true left");
+            //                 nextStepOffset = (pixeldata.width * nextCoords[1] + nextCoords[0]) * 4;
+            //                 pixeldata.data[nextStepOffset] = 0;
+            //                 pixeldata.data[nextStepOffset+1] = 0;
+            //                 pixeldata.data[nextStepOffset+2] = 0;
+            //                 query('hit', true);
+
+            //                 return true;
+            //             }else{
+            //                 goAhead = true;
+            //             }
+            //         }
+            //     }
+            // }
         }
     }
 
-    console.log("false");
+    // if(goAhead){
+    //     return 'continue';
+    // }else{
+        console.log("false");
 
-    return false;
+        return false;
+    // }
 }
 
 function getBorders(pixeldata) {
@@ -319,9 +323,6 @@ function getBorders(pixeldata) {
     var facing = 'right';
 
     var lastCoords = null;
-
-    // var loopCounter = 0;
-    // var loopSteps = [];
 
     for (x = 0; x < pixeldata.width; x++) {
 
@@ -392,142 +393,138 @@ function getBorders(pixeldata) {
             }
 
             while(border.length > 0){
-                // console.log('loopCounter', loopCounter, loopSteps);
-                // if(loopCounter >= 4){
-                    
-                //     console.log('loopCounter hit', loopCounter, loopSteps);
-
-                //     switch(loopSteps[1]){
-                        
-                //         case 'up': 
-                //             lastCoords = [...currentCoords];
-                //             currentCoords = move('up', currentCoords);
-                //             border.push(currentCoords);
-                //             facing = 'right';
-                //             break;
-                        
-                //         case 'right':
-                //             lastCoords = [...currentCoords];
-                //             currentCoords = move('right', currentCoords);
-                //             border.push(currentCoords);
-                //             facing = 'down';
-                //             break;
-                        
-                //         case 'down':
-                //             lastCoords = [...currentCoords];
-                //             currentCoords = move('down', currentCoords);
-                //             border.push(currentCoords);
-                //             facing = 'left';
-                //             break;
-                        
-                //         case 'left':
-                //             lastCoords = [...currentCoords];
-                //             currentCoords = move('left', currentCoords);
-                //             border.push(currentCoords);
-                //             facing = 'up';
-                //             break;
-                //     }
-                //     loopCounter = 0;
-                //     loopSteps = [];
-                // }
-                
                 if(border.length == 1){
 
-                    if(checkForHoles(pixeldata, lastCoords, currentCoords, move('right', currentCoords)) === true){
-                        facing = 'up';
 
-                        // loopCounter++;
-                        // loopSteps.push('right');
-                    }else{
-                        currentCoords = move('right', currentCoords);
-                        border.push(currentCoords);
-                        facing = 'down';
+                    // switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('right', currentCoords))){
+                        
+                    //     case true:
+                    //         facing = 'up';
+                    //         break;
 
-                        // loopCounter = 0;
-                        // loopSteps = [];
-                    }
+                    //     case false:
+                            currentCoords = move('right', currentCoords);
+                            border.push(currentCoords);
+                            facing = 'down';
+                    //         break;
+
+                    //     case 'continue':
+                    //         currentCoords = move('right', currentCoords);
+                    //         border.push(currentCoords);
+                    //         break;
+                    // }
                 }else{
                     if(facing == 'up'){
                         if(moveable('up', currentCoords, pixeldata)){
 
-                            if(checkForHoles(pixeldata, lastCoords, currentCoords, move('up', currentCoords)) === true){
-                                facing = 'left';
 
-                                // loopCounter++;
-                                // loopSteps.push('up');
-                            }else{
-                                lastCoords = [...currentCoords];
+                            // switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('up', currentCoords))){
+                        
+                            //     case true:
+                            //         facing = 'left';
+                            //         break;
+        
+                            //     case false:
+                                    lastCoords = [...currentCoords];
 
-                                currentCoords = move('up', currentCoords);
-                                border.push(currentCoords);
-                                facing = 'right';
+                                    currentCoords = move('up', currentCoords);
+                                    border.push(currentCoords);
+                                    facing = 'right';
+                            //         break;
+        
+                            //     case 'continue':
+                            //         lastCoords = [...currentCoords];
 
-                                // loopCounter = 0;
-                                // loopSteps = [];
-                            }
+                            //         currentCoords = move('up', currentCoords);
+                            //         border.push(currentCoords);
+                            //         break;
+                            // }
                         }else{
                             facing = 'left';
                         }
                     }else if(facing == 'right'){
                         if(moveable('right', currentCoords, pixeldata)){
 
-                            if(checkForHoles(pixeldata, lastCoords, currentCoords, move('right', currentCoords)) === true){
-                                facing = 'up';
 
-                                // loopCounter++;
-                                // loopSteps.push('right');
-                            }else{
-                                lastCoords = [...currentCoords];
 
-                                currentCoords = move('right', currentCoords);
-                                border.push(currentCoords);
-                                facing = 'down';
+                            // switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('right', currentCoords))){
+                        
+                            //     case true:
+                            //         facing = 'up';
+                            //         break;
+        
+                            //     case false:
+                                    lastCoords = [...currentCoords];
 
-                                // loopCounter = 0;
-                                // loopSteps = [];
-                            }
+                                    currentCoords = move('right', currentCoords);
+                                    border.push(currentCoords);
+                                    facing = 'down';
+                            //         break;
+        
+                            //     case 'continue':
+                            //         lastCoords = [...currentCoords];
+
+                            //         currentCoords = move('right', currentCoords);
+                            //         border.push(currentCoords);
+                            //         break;
+                            // }
                         }else{
                             facing = 'up';
                         }
                     }else if(facing == 'down'){
                         if(moveable('down', currentCoords, pixeldata)){
 
-                            if(checkForHoles(pixeldata, lastCoords, currentCoords, move('down', currentCoords)) === true){
-                                facing = 'right';
 
-                                // loopCounter++;
-                                // loopSteps.push('down');
-                            }else{
-                                lastCoords = [...currentCoords];
+                            // switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('down', currentCoords))){
+                        
+                            //     case true:
+                            //         facing = 'right';
+                            //         break;
+        
+                            //     case false:
+                                    lastCoords = [...currentCoords];
 
-                                currentCoords = move('down', currentCoords);
-                                border.push(currentCoords);
-                                facing = 'left';
+                                    currentCoords = move('down', currentCoords);
+                                    border.push(currentCoords);
+                                    facing = 'left';
+                            //         break;
+        
+                            //     case 'continue':
+                            //         lastCoords = [...currentCoords];
 
-                                // loopCounter = 0;
-                                // loopSteps = [];
-                            }
+                            //         currentCoords = move('down', currentCoords);
+                            //         border.push(currentCoords);
+                            //         break;
+                            // }
                         }else{
                             facing = 'right';
                         }
                     }else if(facing == 'left'){
                         if(moveable('left', currentCoords, pixeldata)){
 
-                            if(checkForHoles(pixeldata, lastCoords, currentCoords, move('left', currentCoords)) === true){
-                                facing = 'down';
 
-                                // loopCounter++;
-                                // loopSteps.push('left');
-                            }else{
-                                lastCoords = [...currentCoords];
 
-                                currentCoords = move('left', currentCoords);
-                                border.push(currentCoords);
-                                facing = 'up';
+                            // switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('left', currentCoords))){
+                        
+                            //     case true:
+                            //         facing = 'down';
+                            //         break;
+        
+                            //     case false:
+                                    lastCoords = [...currentCoords];
 
-                                // loopCounter = 0;
-                                // loopSteps = [];
-                            }
+                                    currentCoords = move('left', currentCoords);
+                                    border.push(currentCoords);
+                                    facing = 'up';
+                            //         break;
+        
+                            //     case 'continue':
+                            //         lastCoords = [...currentCoords];
+
+                            //         currentCoords = move('left', currentCoords);
+                            //         border.push(currentCoords);
+                            //         break;
+                            // }
                         }else{
                             facing = 'down';
                         }
