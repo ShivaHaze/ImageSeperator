@@ -309,6 +309,15 @@ function checkForHoles(pixeldata, lastCoords, currentCoords, nextCoords) {
     // }
 }
 
+function bridge(pixeldata, lastCoords, currentCoords, nextCoords){
+
+    console.log('Trying to bridge');
+
+    var direction = getDirection(lastCoords, currentCoords);
+    var direction
+
+}
+
 function getBorders(pixeldata) {
 
     console.log("Getting borders..");
