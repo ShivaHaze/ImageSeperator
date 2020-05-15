@@ -187,7 +187,7 @@ function checkForHoles(pixeldata, lastCoords, currentCoords, nextCoords) {
             
             offset = null;
 
-            // Correct spectating !
+            // Correct spectating ! but y always before x ..
             if(direction == 'up'){
                 if(a == 0 && b >= 2 || a >= 1){
                     offset = (pixeldata.width * (nextCoords[1] - b) + (nextCoords[0] - a)) * 4;
@@ -212,110 +212,176 @@ function checkForHoles(pixeldata, lastCoords, currentCoords, nextCoords) {
                     // console.log('Specating', (nextCoords[1] + b), (nextCoords[0] - a));    
                 }
             }
-            
+
             if(offset !== null){
                 r = pixeldata.data[offset];   // rot
 
                 if(r == 0){
+                    if(direction == 'up'){
+                        edgeX = nextCoords[0] - a;
+                        edgeY = nextCoords[1] - b;
+                        if(edgeY == nextCoords[1]){
 
+                            // console.log("true up");
+                            nextStepOffset = (pixeldata.width * nextCoords[1] + nextCoords[0]) * 4;
+                            pixeldata.data[nextStepOffset] = 0;
+                            pixeldata.data[nextStepOffset+1] = 0;
+                            pixeldata.data[nextStepOffset+2] = 0;
 
+                            console.log(nextCoords[0], nextCoords[1], 'COLORED BLACK');
+
+                            query('hit', true);
+
+                            return true
+                        }else{
+
+                            nextStepOffset = (pixeldata.width * nextCoords[1] + (nextCoords[0]+1)) * 4;
+                            pixeldata.data[nextStepOffset] = 0;
+                            pixeldata.data[nextStepOffset+1] = 0;
+                            pixeldata.data[nextStepOffset+2] = 0;
+
+                            console.log((nextCoords[0]+1), nextCoords[1], 'COLORED BLACK');
+
+                            goAhead = true;
+                        }
+                    }else if(direction == 'right'){
+                        edgeX = nextCoords[0] + a;
+                        edgeY = nextCoords[1] - b;
+
+                        // console.log('nextcoords', nextCoords, 'edgecoords', edgeX, edgeY);
+                        if(edgeX == nextCoords[0]){
+
+                            // console.log("true right");
+                            nextStepOffset = (pixeldata.width * nextCoords[1] + nextCoords[0]) * 4;
+                            pixeldata.data[nextStepOffset] = 0;
+                            pixeldata.data[nextStepOffset+1] = 0;
+                            pixeldata.data[nextStepOffset+2] = 0;
+
+                            console.log(nextCoords[0], nextCoords[1], 'COLORED BLACK');
+
+                            query('hit', true);
+
+                            return true
+                        }else{
+
+                            nextStepOffset = (pixeldata.width * (nextCoords[1]+1) + nextCoords[0]) * 4;
+                            pixeldata.data[nextStepOffset] = 0;
+                            pixeldata.data[nextStepOffset+1] = 0;
+                            pixeldata.data[nextStepOffset+2] = 0;
+
+                            console.log(nextCoords[0], (nextCoords[1]+1), 'COLORED BLACK');
+
+                            goAhead = true;
+                        }
+                    }else if(direction == 'down'){
+                        edgeX = nextCoords[0] + a;
+                        edgeY = nextCoords[1] + b;
+                        console.log(edgeX, edgeY, nextCoords[1]);
+                        if(edgeY == nextCoords[1]){
+
+                            // console.log("true down");
+                            nextStepOffset = (pixeldata.width * nextCoords[1] + nextCoords[0]) * 4;
+                            pixeldata.data[nextStepOffset] = 0;
+                            pixeldata.data[nextStepOffset+1] = 0;
+                            pixeldata.data[nextStepOffset+2] = 0;
+
+                            console.log(nextCoords[0], nextCoords[1], 'COLORED BLACK');
+                            
+                            query('hit', true);
+
+                            return true
+                        }else{
+
+                            nextStepOffset = (pixeldata.width * nextCoords[1] + (nextCoords[0]-1)) * 4;
+                            pixeldata.data[nextStepOffset] = 0;
+                            pixeldata.data[nextStepOffset+1] = 0;
+                            pixeldata.data[nextStepOffset+2] = 0;
+
+                            console.log((nextCoords[0]-1), nextCoords[1], 'COLORED BLACK');
+
+                            goAhead = true;
+                        }
+                    }else if(direction == 'left'){
+                        edgeX = nextCoords[0] - a;
+                        edgeY = nextCoords[1] + b;
+                        if(edgeX == nextCoords[0]){
+
+                            // console.log("true left");
+                            nextStepOffset = (pixeldata.width * nextCoords[1] + nextCoords[0]) * 4;
+                            pixeldata.data[nextStepOffset] = 0;
+                            pixeldata.data[nextStepOffset+1] = 0;
+                            pixeldata.data[nextStepOffset+2] = 0;
+
+                            console.log(nextCoords[0], nextCoords[1], 'COLORED BLACK');
+                            
+                            query('hit', true);
+
+                            return true;
+                        }else{
+
+                            nextStepOffset = (pixeldata.width * (nextCoords[1]-1) + nextCoords[0]) * 4;
+                            pixeldata.data[nextStepOffset] = 0;
+                            pixeldata.data[nextStepOffset+1] = 0;
+                            pixeldata.data[nextStepOffset+2] = 0;
+
+                            console.log(nextCoords[0], (nextCoords[1]-1), 'COLORED BLACK');
+
+                            goAhead = true;
+                        }
+                    }
                 }
             }
-
-
-            // if(offset !== null){
-            //     r = pixeldata.data[offset];   // rot
-
-            //     if(r == 0){
-            //         if(direction == 'up'){
-            //             edgeX = nextCoords[0] - a;
-            //             edgeY = nextCoords[1] - b;
-            //             if(edgeY == nextCoords[1]){
-
-            //                 // console.log("true up");
-            //                 nextStepOffset = (pixeldata.width * nextCoords[1] + nextCoords[0]) * 4;
-            //                 pixeldata.data[nextStepOffset] = 0;
-            //                 pixeldata.data[nextStepOffset+1] = 0;
-            //                 pixeldata.data[nextStepOffset+2] = 0;
-            //                 query('hit', true);
-
-            //                 return true
-            //             }else{
-            //                 goAhead = true;
-            //             }
-            //         }else if(direction == 'right'){
-            //             edgeX = nextCoords[0] + a;
-            //             edgeY = nextCoords[1] - b;
-
-            //             // console.log('nextcoords', nextCoords, 'edgecoords', edgeX, edgeY);
-            //             if(edgeX == nextCoords[0]){
-
-            //                 // console.log("true right");
-            //                 nextStepOffset = (pixeldata.width * nextCoords[1] + nextCoords[0]) * 4;
-            //                 pixeldata.data[nextStepOffset] = 0;
-            //                 pixeldata.data[nextStepOffset+1] = 0;
-            //                 pixeldata.data[nextStepOffset+2] = 0;
-            //                 query('hit', true);
-
-            //                 return true
-            //             }else{
-            //                 goAhead = true;
-            //             }
-            //         }else if(direction == 'down'){
-            //             edgeX = nextCoords[0] + a;
-            //             edgeY = nextCoords[1] + b;
-            //             console.log(edgeX, edgeY, nextCoords[1]);
-            //             if(edgeY == nextCoords[1]){
-
-            //                 // console.log("true down");
-            //                 nextStepOffset = (pixeldata.width * nextCoords[1] + nextCoords[0]) * 4;
-            //                 pixeldata.data[nextStepOffset] = 0;
-            //                 pixeldata.data[nextStepOffset+1] = 0;
-            //                 pixeldata.data[nextStepOffset+2] = 0;
-            //                 query('hit', true);
-
-            //                 return true
-            //             }else{
-            //                 goAhead = true;
-            //             }
-            //         }else if(direction == 'left'){
-            //             edgeX = nextCoords[0] - a;
-            //             edgeY = nextCoords[1] + b;
-            //             if(edgeX == nextCoords[0]){
-
-            //                 // console.log("true left");
-            //                 nextStepOffset = (pixeldata.width * nextCoords[1] + nextCoords[0]) * 4;
-            //                 pixeldata.data[nextStepOffset] = 0;
-            //                 pixeldata.data[nextStepOffset+1] = 0;
-            //                 pixeldata.data[nextStepOffset+2] = 0;
-            //                 query('hit', true);
-
-            //                 return true;
-            //             }else{
-            //                 goAhead = true;
-            //             }
-            //         }
-            //     }
-            // }
         }
     }
 
-    // if(goAhead){
-    //     return 'continue';
-    // }else{
+    // CONTINUE NEEDS TO MAKE CORNERS NOT 'DIAGONALS' 
+    // FUCKS UP THE WHOLE SYSTEM
+
+    if(goAhead){
+        console.log('continue');
+
+        return 'continue';
+    }else{
         console.log("false");
 
         return false;
-    // }
+    }
 }
 
 function bridge(pixeldata, lastCoords, currentCoords, nextCoords){
 
     console.log('Trying to bridge');
 
-    var direction = getDirection(lastCoords, currentCoords);
-    var direction
+    var olddirection = getDirection(lastCoords, currentCoords);
+    var newdirection = getDirection(currentCoords, nextCoords);
 
+    if(olddirection != newdirection){
+        for(var a = 1; a <= holeThreshold; a++){
+
+            switch(olddirection){
+                case 'up':
+                    offset = (pixeldata.width * (currentCoords[1]-a) + currentCoords[0]) * 4;
+                    break;
+                case 'right':
+                    offset = (pixeldata.width * currentCoords[1] + (currentCoords[0]+a)) * 4;
+                    break;
+                case 'down':
+                    offset = (pixeldata.width * (currentCoords[1]+a) + currentCoords[0]) * 4;
+                    break;
+                case 'left':
+                    offset = (pixeldata.width * currentCoords[1] + (currentCoords[0]-a)) * 4;
+                    break;
+            }
+            
+            r = pixeldata.data[offset];   
+            
+            if(r == 0){
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 function getBorders(pixeldata) {
@@ -405,49 +471,49 @@ function getBorders(pixeldata) {
                 if(border.length == 1){
 
 
-                    // switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('right', currentCoords))){
+                    switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('right', currentCoords))){
                         
-                    //     case true:
-                    //         facing = 'up';
-                    //         break;
+                        case true:
+                            facing = 'up';
+                            break;
 
-                    //     case false:
+                        case false:
                             currentCoords = move('right', currentCoords);
                             border.push(currentCoords);
                             facing = 'down';
-                    //         break;
+                            break;
 
-                    //     case 'continue':
-                    //         currentCoords = move('right', currentCoords);
-                    //         border.push(currentCoords);
-                    //         break;
-                    // }
+                        case 'continue':
+                            currentCoords = move('right', currentCoords);
+                            border.push(currentCoords);
+                            break;
+                    }
                 }else{
                     if(facing == 'up'){
                         if(moveable('up', currentCoords, pixeldata)){
 
 
-                            // switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('up', currentCoords))){
+                            switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('up', currentCoords))){
                         
-                            //     case true:
-                            //         facing = 'left';
-                            //         break;
+                                case true:
+                                    facing = 'left';
+                                    break;
         
-                            //     case false:
+                                case false:
                                     lastCoords = [...currentCoords];
 
                                     currentCoords = move('up', currentCoords);
                                     border.push(currentCoords);
                                     facing = 'right';
-                            //         break;
+                                    break;
         
-                            //     case 'continue':
-                            //         lastCoords = [...currentCoords];
+                                case 'continue':
+                                    lastCoords = [...currentCoords];
 
-                            //         currentCoords = move('up', currentCoords);
-                            //         border.push(currentCoords);
-                            //         break;
-                            // }
+                                    currentCoords = move('up', currentCoords);
+                                    border.push(currentCoords);
+                                    break;
+                            }
                         }else{
                             facing = 'left';
                         }
@@ -456,27 +522,27 @@ function getBorders(pixeldata) {
 
 
 
-                            // switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('right', currentCoords))){
+                            switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('right', currentCoords))){
                         
-                            //     case true:
-                            //         facing = 'up';
-                            //         break;
+                                case true:
+                                    facing = 'up';
+                                    break;
         
-                            //     case false:
+                                case false:
                                     lastCoords = [...currentCoords];
 
                                     currentCoords = move('right', currentCoords);
                                     border.push(currentCoords);
                                     facing = 'down';
-                            //         break;
+                                    break;
         
-                            //     case 'continue':
-                            //         lastCoords = [...currentCoords];
+                                case 'continue':
+                                    lastCoords = [...currentCoords];
 
-                            //         currentCoords = move('right', currentCoords);
-                            //         border.push(currentCoords);
-                            //         break;
-                            // }
+                                    currentCoords = move('right', currentCoords);
+                                    border.push(currentCoords);
+                                    break;
+                            }
                         }else{
                             facing = 'up';
                         }
@@ -484,27 +550,28 @@ function getBorders(pixeldata) {
                         if(moveable('down', currentCoords, pixeldata)){
 
 
-                            // switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('down', currentCoords))){
+                            switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('down', currentCoords))){
                         
-                            //     case true:
-                            //         facing = 'right';
-                            //         break;
+                                case true:
+                                    // console.log('true.. facing right');
+                                    facing = 'right';
+                                    break;
         
-                            //     case false:
+                                case false:
                                     lastCoords = [...currentCoords];
 
                                     currentCoords = move('down', currentCoords);
                                     border.push(currentCoords);
                                     facing = 'left';
-                            //         break;
+                                    break;
         
-                            //     case 'continue':
-                            //         lastCoords = [...currentCoords];
+                                case 'continue':
+                                    lastCoords = [...currentCoords];
 
-                            //         currentCoords = move('down', currentCoords);
-                            //         border.push(currentCoords);
-                            //         break;
-                            // }
+                                    currentCoords = move('down', currentCoords);
+                                    border.push(currentCoords);
+                                    break;
+                            }
                         }else{
                             facing = 'right';
                         }
@@ -513,27 +580,27 @@ function getBorders(pixeldata) {
 
 
 
-                            // switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('left', currentCoords))){
+                            switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('left', currentCoords))){
                         
-                            //     case true:
-                            //         facing = 'down';
-                            //         break;
+                                case true:
+                                    facing = 'down';
+                                    break;
         
-                            //     case false:
+                                case false:
                                     lastCoords = [...currentCoords];
 
                                     currentCoords = move('left', currentCoords);
                                     border.push(currentCoords);
                                     facing = 'up';
-                            //         break;
+                                    break;
         
-                            //     case 'continue':
-                            //         lastCoords = [...currentCoords];
+                                case 'continue':
+                                    lastCoords = [...currentCoords];
 
-                            //         currentCoords = move('left', currentCoords);
-                            //         border.push(currentCoords);
-                            //         break;
-                            // }
+                                    currentCoords = move('left', currentCoords);
+                                    border.push(currentCoords);
+                                    break;
+                            }
                         }else{
                             facing = 'down';
                         }
@@ -918,7 +985,7 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
 
 http.createServer(function (req, res) {
     if (req.url != '/favicon.ico') {   
-        fs.readFile(__dirname + '/images/holes.png', function(err, data) {
+        fs.readFile(__dirname + '/images/holes_ez.png', function(err, data) {
             if (err) throw err;
 
             var img = new Canvas.Image; // Create a new Image
