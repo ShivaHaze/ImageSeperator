@@ -6,7 +6,7 @@ var cliProgress = require('cli-progress');
 
 var noiseThreshold = 225; // bigger = more light becomes black (default ~225)
 var extraWhitespace = 10; // half of it on each side
-var holeThreshold = 3     // max hole size in pixel to bridge 
+var holeThreshold = 2     // max hole size in pixel to bridge 
 var sizeThreshold = {     // smaller objects won't get saved   
     x : 0,
     y : 0
@@ -169,6 +169,7 @@ function getDirection(currentCoords, nextCoords) {
 
 function checkForHoles(pixeldata, lastCoords, currentCoords, nextCoords) {
 
+    return false;
 
     var edgePosition = null;
     // var direction = getDirection(lastCoords, currentCoords);
@@ -471,49 +472,49 @@ function getBorders(pixeldata) {
                 if(border.length == 1){
 
 
-                    switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('right', currentCoords))){
+                    // switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('right', currentCoords))){
                         
-                        case true:
-                            facing = 'up';
-                            break;
+                    //     case true:
+                    //         facing = 'up';
+                    //         break;
 
-                        case false:
+                    //     case false:
                             currentCoords = move('right', currentCoords);
                             border.push(currentCoords);
                             facing = 'down';
-                            break;
+                    //         break;
 
-                        case 'continue':
-                            currentCoords = move('right', currentCoords);
-                            border.push(currentCoords);
-                            break;
-                    }
+                    //     case 'continue':
+                    //         currentCoords = move('right', currentCoords);
+                    //         border.push(currentCoords);
+                    //         break;
+                    // }
                 }else{
                     if(facing == 'up'){
                         if(moveable('up', currentCoords, pixeldata)){
 
 
-                            switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('up', currentCoords))){
+                            // switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('up', currentCoords))){
                         
-                                case true:
-                                    facing = 'left';
-                                    break;
+                            //     case true:
+                            //         facing = 'left';
+                            //         break;
         
-                                case false:
+                            //     case false:
                                     lastCoords = [...currentCoords];
 
                                     currentCoords = move('up', currentCoords);
                                     border.push(currentCoords);
                                     facing = 'right';
-                                    break;
+                            //         break;
         
-                                case 'continue':
-                                    lastCoords = [...currentCoords];
+                            //     case 'continue':
+                            //         lastCoords = [...currentCoords];
 
-                                    currentCoords = move('up', currentCoords);
-                                    border.push(currentCoords);
-                                    break;
-                            }
+                            //         currentCoords = move('up', currentCoords);
+                            //         border.push(currentCoords);
+                            //         break;
+                            // }
                         }else{
                             facing = 'left';
                         }
@@ -522,27 +523,27 @@ function getBorders(pixeldata) {
 
 
 
-                            switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('right', currentCoords))){
+                            // switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('right', currentCoords))){
                         
-                                case true:
-                                    facing = 'up';
-                                    break;
+                            //     case true:
+                            //         facing = 'up';
+                            //         break;
         
-                                case false:
+                            //     case false:
                                     lastCoords = [...currentCoords];
 
                                     currentCoords = move('right', currentCoords);
                                     border.push(currentCoords);
                                     facing = 'down';
-                                    break;
+                            //         break;
         
-                                case 'continue':
-                                    lastCoords = [...currentCoords];
+                            //     case 'continue':
+                            //         lastCoords = [...currentCoords];
 
-                                    currentCoords = move('right', currentCoords);
-                                    border.push(currentCoords);
-                                    break;
-                            }
+                            //         currentCoords = move('right', currentCoords);
+                            //         border.push(currentCoords);
+                            //         break;
+                            // }
                         }else{
                             facing = 'up';
                         }
@@ -550,28 +551,28 @@ function getBorders(pixeldata) {
                         if(moveable('down', currentCoords, pixeldata)){
 
 
-                            switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('down', currentCoords))){
+                            // switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('down', currentCoords))){
                         
-                                case true:
-                                    // console.log('true.. facing right');
-                                    facing = 'right';
-                                    break;
+                            //     case true:
+                            //         // console.log('true.. facing right');
+                            //         facing = 'right';
+                            //         break;
         
-                                case false:
+                            //     case false:
                                     lastCoords = [...currentCoords];
 
                                     currentCoords = move('down', currentCoords);
                                     border.push(currentCoords);
                                     facing = 'left';
-                                    break;
+                            //         break;
         
-                                case 'continue':
-                                    lastCoords = [...currentCoords];
+                            //     case 'continue':
+                            //         lastCoords = [...currentCoords];
 
-                                    currentCoords = move('down', currentCoords);
-                                    border.push(currentCoords);
-                                    break;
-                            }
+                            //         currentCoords = move('down', currentCoords);
+                            //         border.push(currentCoords);
+                            //         break;
+                            // }
                         }else{
                             facing = 'right';
                         }
@@ -580,27 +581,27 @@ function getBorders(pixeldata) {
 
 
 
-                            switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('left', currentCoords))){
+                            // switch(checkForHoles(pixeldata, lastCoords, currentCoords, move('left', currentCoords))){
                         
-                                case true:
-                                    facing = 'down';
-                                    break;
+                            //     case true:
+                            //         facing = 'down';
+                            //         break;
         
-                                case false:
+                            //     case false:
                                     lastCoords = [...currentCoords];
 
                                     currentCoords = move('left', currentCoords);
                                     border.push(currentCoords);
                                     facing = 'up';
-                                    break;
+                            //         break;
         
-                                case 'continue':
-                                    lastCoords = [...currentCoords];
+                            //     case 'continue':
+                            //         lastCoords = [...currentCoords];
 
-                                    currentCoords = move('left', currentCoords);
-                                    border.push(currentCoords);
-                                    break;
-                            }
+                            //         currentCoords = move('left', currentCoords);
+                            //         border.push(currentCoords);
+                            //         break;
+                            // }
                         }else{
                             facing = 'down';
                         }
@@ -750,6 +751,146 @@ function saveBordersAsImages(img, borders) {
     }
 
     console.log("Done.\n");
+}
+
+function expandBorders(pixeldata){
+
+    var tmphits = {};
+    var tmpArr = [];
+
+    for (x = (extraWhitespace/2); x < pixeldata.width-(extraWhitespace/2); x++) {
+        for (y = (extraWhitespace/2); y < pixeldata.height-(extraWhitespace/2); y++) {
+
+            tmphits = {};
+
+            coreOffset = (pixeldata.width * y + x) * 4;
+            coreR = pixeldata.data[coreOffset];
+            
+            console.log();
+            query('x: ' + x + ' y: ' + y + ' coreR: ' + coreR, true);
+
+            if(coreR == 255){
+                for(var a = 0; a < 4; a++){ // 0: up 1: right 2: down 3: left
+
+                    var stretchAbort = false;
+                    tmpArr = [];
+                    
+
+                    for(var t = 1; t <= holeThreshold+1; t++){
+                        
+                        //query('a: ' + a + ' t: ' + t, true);
+
+                        switch(a){
+                            case 0:
+
+                                if(t <= y && !stretchAbort){
+
+                                    offset = (pixeldata.width * (y-t) + x) * 4;
+                                    r = pixeldata.data[offset];
+                                
+                                    console.log('UP: ', x, (y-t), r);
+    
+                                    if(r == 255){
+                                        tmpArr.push([x, (y-t)]);
+                                    }else if(r == 0){
+                                        stretchAbort = true;
+                                    }
+                                }else{
+                                    console.log('Abort')
+                                }
+
+                                break;
+                            case 1:
+
+                                if(t <= (pixeldata.width - x) && !stretchAbort){
+
+                                    offset = (pixeldata.width * y + (x+t)) * 4;
+                                    r = pixeldata.data[offset];
+
+                                    console.log('RIGHT: ', (x+t), y, r);
+
+                                    if(r == 255){
+                                        tmpArr.push([(x+t), y]);
+                                    }else if(r == 0){
+                                        stretchAbort = true;
+                                    }
+                                }else{
+                                    console.log('Abort');
+                                }
+
+                                break;
+                            case 2:
+
+                                if(t <= (pixeldata.height - y) && !stretchAbort){
+
+                                    offset = (pixeldata.width * (y+t) + x) * 4;
+                                    r = pixeldata.data[offset];
+
+                                    console.log('DOWN: ', x, (y+t), r);
+
+                                    if(r == 255){
+                                        tmpArr.push([x, (y+t)]);
+                                    }else if(r == 0){
+                                        stretchAbort = true;
+                                    }
+                                }else{
+                                    console.log('Abort');
+                                }
+
+                                break;
+                            case 3:
+
+                                if(t <= x && !stretchAbort){
+
+                                    offset = (pixeldata.width * y + (x-t)) * 4;
+                                    r = pixeldata.data[offset];
+
+                                    console.log('LEFT: ', (x-t), y, r);
+
+                                    if(r == 255){
+                                        tmpArr.push([(x-t), y]);
+                                    }else if(r == 0){
+                                        stretchAbort = true;
+                                    }
+                                }else{
+                                    console.log('Abort');
+                                }
+
+                                break;
+                        }
+                        
+                        if(t == holeThreshold+1 && stretchAbort){
+                            switch(a){
+                                case 0:
+                                    console.log('up +', tmpArr)
+                                    tmphits['up'] = tmpArr;
+                                    break;
+                                case 1:
+                                    tmphits['right'] = tmpArr;
+                                    console.log('right +', tmpArr)
+                                    break;
+                                case 2:
+                                    tmphits['down'] = tmpArr;
+                                    console.log('down +', tmpArr)
+                                    break;
+                                case 3:
+                                    tmphits['left'] = tmpArr;
+                                    console.log('left +', tmpArr)
+                                    break;
+                            }
+                        }
+                        console.log('tmphits length: ',Object.keys(tmphits).length);
+                        console.log(tmphits);
+                        if(a == 3 && Object.keys(tmphits).length >= 2){
+
+                            console.log('MATCH', tmphits);
+
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 function filterBorders(borders, pixeldata) {
@@ -985,7 +1126,7 @@ function verifyObjectInObject(outerBB, innerBB, outerIndex, innerIndex, borders,
 
 http.createServer(function (req, res) {
     if (req.url != '/favicon.ico') {   
-        fs.readFile(__dirname + '/images/holes_ez.png', function(err, data) {
+        fs.readFile(__dirname + '/images/square1.png', function(err, data) {
             if (err) throw err;
 
             var img = new Canvas.Image; // Create a new Image
@@ -1006,6 +1147,8 @@ http.createServer(function (req, res) {
             //determineNoiseThreshold(pixeldata);
 
             pixeldata = filterNoise(pixeldata);
+
+            expandBorders(pixeldata);
 
             ctx.putImageData(pixeldata, 0, 0);
 
